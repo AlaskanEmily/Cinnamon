@@ -14,8 +14,6 @@ CXXFLAGS=$(CLFLAGS) /Os /W3
 !INCLUDE cin_build_openal.mk
 !INCLUDE cin_build_dsound.mk
 
-TEST_OBJS=sine_test.obj
-
 dsound: $(DSOUND_OBJECTS) cin_common.obj $(TEST_OBJS)
 	$(LINK) $(DSOUND_OBJECTS) cin_common.obj dsound.lib dxguid.lib $(LINKFLAGS)
 	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
@@ -25,7 +23,6 @@ openal: $(OPENAL_OBJECTS) cin_common.obj $(TEST_OBJS)
 	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
 
 # Common objects
-
 cin_common.obj: $(CIN_COMMON_DEPS)
 	$(CL) $(CFLAGS) cin_common.c
 
