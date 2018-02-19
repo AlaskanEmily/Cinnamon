@@ -10,6 +10,7 @@ CLFLAGS=/nologo /GF /EHsc /arch:SSE /Zi /c /WX /DCIN_INTERNAL /I$(MAKEDIR)\inclu
 CFLAGS=$(CLFLAGS) /O1 /W2
 CXXFLAGS=$(CLFLAGS) /Os /W3
 
+!INCLUDE cin_build.mk
 !INCLUDE cin_build_openal.mk
 !INCLUDE cin_build_dsound.mk
 
@@ -24,35 +25,30 @@ openal: $(OPENAL_OBJECTS) cin_common.obj $(TEST_OBJS)
 	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
 
 # Common objects
-COMMON_DEPS=cin_driver.h cin_format.h cin_export.h cin_common.h
 
-cin_common.obj: cin_common.c cin_common.h $(COMMON_DEPS) cin_loader.h cin_sound.h
+cin_common.obj: $(CIN_COMMON_DEPS)
 	$(CL) $(CFLAGS) cin_common.c
 
-cin_loader_soft.obj: cin_loader_soft.c cin_loader_soft.h cin_loader.h
+cin_loader_soft.obj: $(CIN_LOADER_SOFT_DEPS)
 	$(CL) $(CFLAGS) cin_loader_soft.c
 
 # DirectSound objects
-COMMON_DSOUND_DEPS=$(COMMON_DEPS) cin_loader_soft.h cin_sound_dsound.hpp
-
-cin_driver_dsound.obj: $(COMMON_DSOUND_DEPS) cin_driver_dsound.cpp cin_driver.h
+cin_driver_dsound.obj: $(CIN_DRIVER_DSOUND_DEPS)
 	$(CL) $(CXXFLAGS) cin_driver_dsound.cpp
 
-cin_sound_dsound.obj: $(COMMON_DSOUND_DEPS) cin_sound_dsound.cpp cin_sound.h cin_loader.h cin_loader_soft.h
+cin_sound_dsound.obj: $(CIN_SOUND_DSOUND_DEPS)
 	$(CL) $(CXXFLAGS) cin_sound_dsound.cpp
 
 # OpenAL objects
-COMMON_OPENAL_DEPS=cin_openal.h cin_loader.h $(COMMON_DEPS)
-
-cin_loader_openal.obj: $(COMMON_OPENAL_DEPS) cin_loader_openal.c
+cin_loader_openal.obj: $(CIN_LOADER_OPENAL_DEPS)
 	$(CL) $(CFLAGS) cin_loader_openal.c
 
-cin_driver_openal.obj: $(COMMON_OPENAL_DEPS) cin_driver_openal.c
+cin_driver_openal.obj: $(CIN_DRIVER_OPENAL_DEPS)
 	$(CL) $(CFLAGS) cin_driver_openal.c
 
-cin_sound_openal.obj: $(COMMON_OPENAL_DEPS) cin_sound_openal.c
+cin_sound_openal.obj: $(CIN_SOUND_OPENAL_DEPS)
 	$(CL) $(CFLAGS) cin_sound_openal.c
 
 #Test objects
-sine_test.obj: $(COMMON_DEPS) cin_loader.h cin_sound.h sine_test.c
+sine_test.obj: $(SINE_TEST_DEPS)
 	$(CL) $(CFLAGS) sine_test.c
