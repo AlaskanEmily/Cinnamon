@@ -31,10 +31,11 @@ private:
     DSBUFFERDESC m_descriptor;
     CComPtr<IDirectSoundBuffer> m_buffer;
     CComPtr<IDirectSound8> m_dsound;
-    struct Cin_Driver *drv;
+    struct Cin_Driver *m_driver;
     HANDLE m_event;
     struct Cin_LoaderData *const m_data;
     volatile LONG m_at;
+    bool m_die_at_next_event;
     
     static inline WORD FormatTag(enum Cin_Format format){
         switch(format){
@@ -109,13 +110,19 @@ private:
         m_fmt.cbSize = 0;
     }
     
-    void write(unsigned len);
+    unsigned write(unsigned len, unsigned &wrote);
+    inline unsigned write(const unsigned len){
+        unsigned _;
+        return write(len, _);
+    }
+    
+    void setEvents();
     
 public:
     
     const unsigned m_byte_length;
     
-    Cin_Sound(CComPtr<IDirectSound8> &dsound,
+    Cin_Sound(struct Cin_Driver *drv,
         struct Cin_LoaderData *data,
         unsigned sample_rate,
         unsigned channels,
@@ -127,7 +134,8 @@ public:
     bool init();
     
     inline void play(){
-        m_buffer->Play(0, 0, 0);
+        m_buffer->Play(0, 0, DSBPLAY_LOOPING);
+        m_die_at_next_event = false;
     }
     
     inline void stop(){

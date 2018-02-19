@@ -10,33 +10,68 @@
 #include <assert.h>
 #include <new>
     
-void Cin_Sound::write(unsigned len) {
-    LONG position = InterlockedExchange(&m_at, 0);
+unsigned Cin_Sound::write(unsigned len, unsigned &wrote) {
+    const LONG position = InterlockedExchange(&m_at, 0);
+    
     void *dest0, *dest1;
     DWORD count0, count1;
     m_buffer->Lock(0, len, &dest0, &count0, &dest1, &count1, DSBLOCK_FROMWRITECURSOR);
     
     Cin_LoaderMemcpy(m_data, position, dest0, count0);
-    position += count0;
     
-    Cin_LoaderMemcpy(m_data, position, dest1, count1);
-    position += count1;
+    Cin_LoaderMemcpy(m_data, position + count0, dest1, count1);
     
     m_buffer->Unlock(dest0, count0, dest1, count1);
-    InterlockedExchange(&m_at, position);
+    
+    wrote = count0 + count1;
+    InterlockedExchange(&m_at, position + count0 + count1);
+    
+    return position;
 }
 
-Cin_Sound::Cin_Sound(CComPtr<IDirectSound8> &dsound,
+void Cin_Sound::setEvents(){
+
+    IDirectSoundNotify8 *notify;
+    const HRESULT query_result =
+        m_buffer->QueryInterface(IID_IDirectSoundNotify8, (void**)&notify);
+    
+    if(FAILED(query_result)){
+        return;
+    }
+    
+    assert(m_event != NULL);
+    assert(notify != NULL);
+    
+    // Set up write notifications
+    DSBPOSITIONNOTIFY notes[CIN_DSOUND_NOTIFY_COUNT + 2];
+    const unsigned buffer_size = bufferSize();
+    for(unsigned i = 0; i < CIN_DSOUND_NOTIFY_COUNT; i++){
+        const unsigned offset = (i * buffer_size / CIN_DSOUND_NOTIFY_COUNT);
+        notes[i].dwOffset = offset;
+        notes[i].hEventNotify = m_event;
+    }
+    notes[CIN_DSOUND_NOTIFY_COUNT].dwOffset = DSBPN_OFFSETSTOP;
+    notes[CIN_DSOUND_NOTIFY_COUNT].hEventNotify = m_event;
+    
+    notify->SetNotificationPositions(CIN_DSOUND_NOTIFY_COUNT + 1, notes);
+    
+    notify->Release();
+}
+
+Cin_Sound::Cin_Sound(struct Cin_Driver *drv,
     struct Cin_LoaderData *data,
     unsigned sample_rate,
     unsigned channels,
     enum Cin_Format format,
     unsigned byte_length)
-  : m_dsound(dsound)
+  : m_dsound(Cin_GetDriver(drv))
+  , m_driver(drv)
   , m_data(data)
   , m_at(0)
   , m_byte_length(byte_length){
-  
+    
+    assert(drv != NULL);
+    assert(data != NULL);
     // Setup the format.
     setupFormat(sample_rate, channels, format);
     setupDescriptor();
@@ -45,7 +80,7 @@ Cin_Sound::Cin_Sound(CComPtr<IDirectSound8> &dsound,
 Cin_Sound::~Cin_Sound(){
     Cin_LoaderFreeData(m_data);
     if(m_event != NULL)
-        CloseHandle(m_event);
+        Cin_RemoveEvent(m_driver, this);
 }
     
 bool Cin_Sound::init(){
@@ -53,33 +88,21 @@ bool Cin_Sound::init(){
     const HRESULT result =
         m_dsound->CreateSoundBuffer(&m_descriptor, &m_buffer, NULL);
     
+    assert(m_driver != NULL);
+    
     if(SUCCEEDED(result)){
         // Fill the buffer.
-        write(bufferSize());
         
         if(bufferSize() != m_byte_length){
-            IDirectSoundNotify8 *notify;
-            const HRESULT query_result =
-                m_buffer->QueryInterface(IID_IDirectSoundNotify8, (void**)&notify);
-            
-            if(FAILED(query_result))
-                return false;
             m_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-            
-            // Set up write notifications
-            DSBPOSITIONNOTIFY notes[CIN_DSOUND_NOTIFY_COUNT];
-            for(unsigned i = 0; i < CIN_DSOUND_NOTIFY_COUNT; i++){
-                notes[i].dwOffset = i * bufferSize() / CIN_DSOUND_NOTIFY_COUNT;
-                notes[i].hEventNotify = m_event;
-            }
-            notify->SetNotificationPositions(CIN_DSOUND_NOTIFY_COUNT, notes);
-            
-            notify->Release();
+            setEvents();
+            Cin_AddEvent(m_driver, this, m_event);
         }
         else{
             for(unsigned i = 0; i < CIN_DSOUND_NOTIFY_COUNT; i++){
                 m_event = NULL;
             }
+            write(bufferSize());
         }
         
         return true;
@@ -90,10 +113,36 @@ bool Cin_Sound::init(){
 }
 
 void Cin_Sound::onEvent(){
-    if(CIN_DSOUND_NOTIFY_COUNT < 3)
-        write(bufferSize());
-    else
-        write((bufferSize() << 1) / CIN_DSOUND_NOTIFY_COUNT);
+
+    if(m_die_at_next_event){
+        m_buffer->Stop();
+        return;
+    }
+    
+    const unsigned to_write = (CIN_DSOUND_NOTIFY_COUNT < 3) ?
+        min(m_byte_length - m_at, bufferSize()) :
+        min(m_byte_length - m_at, (bufferSize() << 1) / CIN_DSOUND_NOTIFY_COUNT);
+    
+    const unsigned at = write(to_write);
+    
+    if(at >= m_byte_length){
+        IDirectSoundNotify8 *notify;
+        const HRESULT query_result =
+            m_buffer->QueryInterface(IID_IDirectSoundNotify8, (void**)&notify);
+        
+        if(FAILED(query_result)){
+            puts("QUERY FAIL");
+            return;
+        }
+        
+        DSBPOSITIONNOTIFY note;
+        note.dwOffset = DSBPN_OFFSETSTOP;
+        note.hEventNotify = m_event;
+        notify->SetNotificationPositions(1, &note);
+        notify->Release();
+        
+        m_die_at_next_event = true;
+    }
 }
 
 unsigned Cin_StructSoundSize(){
@@ -103,15 +152,21 @@ unsigned Cin_StructSoundSize(){
 enum Cin_LoaderError Cin_LoaderFinailize(struct Cin_Loader *ld,
     struct Cin_Sound *out){
     
-    assert(ld->data != NULL);
-    CComPtr<IDirectSound8> &dsound_ptr = Cin_GetDriver((Cin_Driver*)ld->data);
+    assert(ld != NULL);
+    Cin_Driver *const drv = (Cin_Driver*)ld->data;
+    assert(drv != NULL);
     
-    new (out) Cin_Sound(dsound_ptr,
+    new (out) Cin_Sound(drv,
         ld->first,
         ld->sample_rate,
         ld->channels,
         ld->format,
         ld->bytes_placed);
+    
+#ifndef NDEBUG
+    /* Poison the loader */
+    memset(ld, 0xFF, sizeof(struct Cin_Loader));
+#endif
     
     if(out->init())
         return Cin_eLoaderSuccess;

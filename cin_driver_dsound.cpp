@@ -120,8 +120,11 @@ cin_driver_thread_run:
                         
                         assert(snd_iter != m_sounds.end());
                         
+                        const size_t num = std::distance(m_sounds.begin(), snd_iter);
                         std::vector<HANDLE>::iterator hnd_iter =
-                            m_handles.begin() + std::distance(m_sounds.begin(), snd_iter);
+                            m_handles.begin() + num;
+                        
+                        CloseHandle(*hnd_iter);
                         
                         // Swap in the final objects.
                         *hnd_iter = m_handles.back();

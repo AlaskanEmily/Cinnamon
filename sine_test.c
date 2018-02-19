@@ -46,7 +46,7 @@ int main(int argc, char **argv){
         unsigned num_channels = 2,
             sample_rate = 44100,
             sin_frequency = 440,
-            num_seconds = 1;
+            num_seconds = 11;
         
         /* Times two for the size of int16_t */
         const unsigned data_size = sample_rate * num_channels << 1;
@@ -121,6 +121,7 @@ int main(int argc, char **argv){
             }
         }
         
+        puts("Playing");
         Cin_SoundPlay(sound);
         
 #ifdef _WIN32
