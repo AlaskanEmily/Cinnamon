@@ -72,7 +72,7 @@ enum Cin_LoaderError Cin_LoaderPut(struct Cin_Loader *ld,
     return Cin_eLoaderSuccess;
 }
 
-CIN_EXPORT(enum Cin_LoaderError) Cin_LoaderFinailize(struct Cin_Loader *ld,
+CIN_EXPORT(enum Cin_LoaderError) Cin_LoaderFinalize(struct Cin_Loader *ld,
     struct Cin_Sound *out){
     
     ALuint buffer;

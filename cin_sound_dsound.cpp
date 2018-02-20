@@ -149,7 +149,7 @@ unsigned Cin_StructSoundSize(){
     return sizeof(struct Cin_Sound);
 }
 
-enum Cin_LoaderError Cin_LoaderFinailize(struct Cin_Loader *ld,
+enum Cin_LoaderError Cin_LoaderFinalize(struct Cin_Loader *ld,
     struct Cin_Sound *out){
     
     assert(ld != NULL);

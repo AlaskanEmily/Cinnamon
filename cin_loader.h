@@ -56,7 +56,7 @@ CIN_EXPORT(enum Cin_LoaderError) Cin_LoaderPut(struct Cin_Loader *ld,
     const void *data,
     unsigned byte_size);
 
-CIN_EXPORT(enum Cin_LoaderError) Cin_LoaderFinailize(struct Cin_Loader *ld,
+CIN_EXPORT(enum Cin_LoaderError) Cin_LoaderFinalize(struct Cin_Loader *ld,
     struct Cin_Sound *out);
 
 /** @} */ /* End Loader group. */

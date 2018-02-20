@@ -107,7 +107,7 @@ int main(int argc, char **argv){
         /* Create a new sound from this loader. */
         {
             const enum Cin_LoaderError err =
-                Cin_LoaderFinailize(loader, sound);
+                Cin_LoaderFinalize(loader, sound);
             
             free(loader);
             free(data);
