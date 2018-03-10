@@ -10,6 +10,7 @@
 #include "cin_openal.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 unsigned Cin_StructDriverSize(){
     return sizeof(struct Cin_Driver);

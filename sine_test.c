@@ -3,6 +3,8 @@
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
+#define _POSIX_C_SOURCE 199309L
+
 #include "cin_driver.h"
 #include "cin_loader.h"
 #include "cin_sound.h"
@@ -18,6 +20,7 @@
 #include <Windows.h>
 #else
 #include <time.h>
+#include <unistd.h>
 #endif
 
 #ifndef M_PI
@@ -44,7 +47,7 @@ int main(int argc, char **argv){
         
         /* TODO: Make these configurable */
         unsigned num_channels = 2,
-            sample_rate = 44100,
+            sample_rate = 48000,
             sin_frequency = 440,
             num_seconds = 11;
         

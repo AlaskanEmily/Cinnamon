@@ -14,14 +14,6 @@ CXXFLAGS=$(CLFLAGS) /Os /W3
 !INCLUDE cin_build_openal.mk
 !INCLUDE cin_build_dsound.mk
 
-dsound: $(DSOUND_OBJECTS) cin_common.obj $(TEST_OBJS)
-	$(LINK) $(DSOUND_OBJECTS) cin_common.obj dsound.lib dxguid.lib $(LINKFLAGS)
-	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
-
-openal: $(OPENAL_OBJECTS) cin_common.obj $(TEST_OBJS)
-	$(LINK) $(OPENAL_OBJECTS) cin_common.obj lib\OpenAL32.lib $(LINKFLAGS)
-	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
-
 # Common objects
 cin_common.obj: $(CIN_COMMON_DEPS)
 	$(CL) $(CFLAGS) cin_common.c
@@ -49,3 +41,13 @@ cin_sound_openal.obj: $(CIN_SOUND_OPENAL_DEPS)
 #Test objects
 sine_test.obj: $(SINE_TEST_DEPS)
 	$(CL) $(CFLAGS) sine_test.c
+
+cinnamon.dll: $(DSOUND_OBJECTS) cin_common.obj $(TEST_OBJS)
+	$(LINK) $(DSOUND_OBJECTS) cin_common.obj dsound.lib dxguid.lib $(LINKFLAGS)
+	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
+
+openal: $(OPENAL_OBJECTS) cin_common.obj $(TEST_OBJS)
+	$(LINK) $(OPENAL_OBJECTS) cin_common.obj lib\OpenAL32.lib $(LINKFLAGS)
+	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
+
+dsound: cinnamon.dll

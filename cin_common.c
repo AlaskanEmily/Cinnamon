@@ -39,7 +39,7 @@ CIN_PRIVATE(enum Cin_LoaderError) Cin_FormatCompatible(struct Cin_Driver *drv,
         const enum Cin_DriverError drv_err =
             Cin_DriverSupportsSampleRate(drv, sample_rate);
         if(drv_err != Cin_eDriverSuccess){
-            assert(drv_err == Cin_eLoaderUnsupportedSampleRate);
+            assert(drv_err == Cin_eDriverUnsupportedSampleRate);
             return (enum Cin_LoaderError)drv_err;
         }
     }

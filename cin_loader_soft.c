@@ -1,6 +1,7 @@
 #include "cin_loader_soft.h"
 #include "cin_loader.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 unsigned Cin_StructLoaderSize(){
@@ -11,6 +12,8 @@ CIN_PRIVATE(void) Cin_CreateSoftLoader(struct Cin_Loader *out,
     unsigned sample_rate,
     unsigned channels,
     enum Cin_Format format){
+    
+    assert(out != NULL);
     
     out->sample_rate = sample_rate;
     out->channels = channels;
@@ -25,6 +28,8 @@ enum Cin_LoaderError Cin_LoaderPut(struct Cin_Loader *ld,
     
     struct Cin_LoaderData *const lddata =
         malloc(sizeof(struct Cin_LoaderData) + byte_size);
+    
+    assert(lddata != NULL);
     
     lddata->next = NULL;
     lddata->len = byte_size;

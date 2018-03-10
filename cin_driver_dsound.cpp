@@ -251,6 +251,7 @@ CIN_EXPORT(enum Cin_DriverError) Cin_DriverSupportsSampleRate(
         case 22050:
         case 44100:
         case 44800:
+        case 48000:
             return Cin_eDriverSuccess;
         default:
             return Cin_eDriverUnsupportedSampleRate;
@@ -263,8 +264,8 @@ enum Cin_LoaderError Cin_CreateLoader(struct Cin_Loader *out,
     unsigned num_channels,
     enum Cin_Format format){
     
-    assert(out);
-    assert(drv);
+    assert(out != NULL);
+    assert(drv != NULL);
     
     {
         const enum Cin_LoaderError err =
