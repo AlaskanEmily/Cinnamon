@@ -105,7 +105,6 @@ Cin_Sound::Cin_Sound(struct Cin_Driver *drv,
     assert(data != NULL);
     // Setup the format.
     setupFormat(sample_rate, channels, format);
-    init();
 }
 
 Cin_Sound::~Cin_Sound(){

@@ -35,6 +35,7 @@ void Cin_Driver::run(){
         }
         else{
             assert(signal > WAIT_OBJECT_0);
+            assert(m_sounds.size() + 1 == m_handles.size());
             const size_t which = (signal - WAIT_OBJECT_0) - 1;
             assert(which < m_sounds.size());
             m_sounds[which]->onEvent();
@@ -107,10 +108,12 @@ unsigned Cin_StructDriverSize(){
 
 enum Cin_DriverError Cin_CreateDriver(struct Cin_Driver *drv){
     new (drv) Cin_Driver();
+    drv->start();
     return Cin_eDriverSuccess;
 }
 
 void Cin_DestroyDriver(struct Cin_Driver *drv){
+    drv->stop();
     drv->~Cin_Driver();
 }
 

@@ -56,11 +56,11 @@ sine_test.obj: $(SINE_TEST_DEPS)
 	$(CL) $(CFLAGS) sine_test.c
 
 cinnamon.dll: $(DSOUND_OBJECTS) cin_common.obj $(TEST_OBJS)
-	$(LINK) $(DSOUND_OBJECTS) cin_common.obj dsound.lib dxguid.lib $(LINKFLAGS)
-	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
+	$(LINK) /DEBUG $(DSOUND_OBJECTS) cin_common.obj dsound.lib dxguid.lib $(LINKFLAGS)
+	$(LINK) /DEBUG sine_test.obj cinnamon.lib /NOLOGO
 
 openal: $(OPENAL_OBJECTS) cin_common.obj $(TEST_OBJS)
-	$(LINK) $(OPENAL_OBJECTS) cin_common.obj lib\OpenAL32.lib $(LINKFLAGS)
-	$(LINK) sine_test.obj cinnamon.lib /NOLOGO
+	$(LINK) /DEBUG $(OPENAL_OBJECTS) cin_common.obj lib\OpenAL32.lib $(LINKFLAGS)
+	$(LINK) /DEBUG sine_test.obj cinnamon.lib /NOLOGO
 
 dsound: cinnamon.dll
