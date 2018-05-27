@@ -6,6 +6,7 @@
  */
 
 #include "cin_sound_dsound.hpp"
+#include "cin_driver_dsound.hpp"
 
 #include <assert.h>
 #include <new>
@@ -27,6 +28,37 @@ unsigned Cin_Sound::write(unsigned len, unsigned &wrote) {
     InterlockedExchange(&m_at, position + count0 + count1);
     
     return position;
+}
+
+void Cin_Sound::setupFormat(unsigned sample_rate,
+    unsigned channels,
+    enum Cin_Format format){
+        
+#ifndef NDEBUG
+    // Poison the uninitialized format
+    memset(&m_fmt, 0xFF, sizeof(WAVEFORMATEX));
+#endif
+    
+    // Set format tag
+    m_fmt.wFormatTag = FormatTag(format);
+    
+    // Set channels
+    assert(channels == 1 || channels == 2);
+    m_fmt.nChannels = channels;
+    
+    // Set sample rate
+    m_fmt.nSamplesPerSec = sample_rate;
+    
+    // Block align
+    const unsigned align = channels * Cin_BytesPerSample(format);
+    m_fmt.nBlockAlign = align;
+    
+    m_fmt.nAvgBytesPerSec = sample_rate * align;
+    
+    // Set bits per sample
+    m_fmt.wBitsPerSample = Cin_BytesPerSample(format) * 8;
+    
+    m_fmt.cbSize = 0;
 }
 
 void Cin_Sound::setEvents(){
@@ -54,7 +86,6 @@ void Cin_Sound::setEvents(){
     notes[CIN_DSOUND_NOTIFY_COUNT].hEventNotify = m_event;
     
     notify->SetNotificationPositions(CIN_DSOUND_NOTIFY_COUNT + 1, notes);
-    
     notify->Release();
 }
 
@@ -79,14 +110,24 @@ Cin_Sound::Cin_Sound(struct Cin_Driver *drv,
 
 Cin_Sound::~Cin_Sound(){
     Cin_LoaderFreeData(m_data);
-    if(m_event != NULL)
-        Cin_RemoveEvent(m_driver, this);
 }
     
 bool Cin_Sound::init(){
     // Create the buffer.
+    
+    DSBUFFERDESC descriptor;
+    descriptor.dwSize = sizeof(DSBUFFERDESC);
+    descriptor.dwFlags =
+        DSBCAPS_CTRLPOSITIONNOTIFY |
+        DSBCAPS_GETCURRENTPOSITION2 |
+        DSBCAPS_GLOBALFOCUS;
+    descriptor.dwBufferBytes = bufferSize();
+    descriptor.dwReserved = 0;
+    descriptor.lpwfxFormat = &m_fmt;
+    descriptor.guid3DAlgorithm = DS3DALG_DEFAULT;
+
     const HRESULT result =
-        m_dsound->CreateSoundBuffer(&m_descriptor, &m_buffer, NULL);
+        m_dsound->CreateSoundBuffer(&descriptor, &m_buffer, NULL);
     
     assert(m_driver != NULL);
     
@@ -96,7 +137,7 @@ bool Cin_Sound::init(){
         if(bufferSize() != m_byte_length){
             m_event = CreateEvent(NULL, FALSE, FALSE, NULL);
             setEvents();
-            Cin_AddEvent(m_driver, this, m_event);
+            m_driver->addSound(this, m_event);
         }
         else{
             for(unsigned i = 0; i < CIN_DSOUND_NOTIFY_COUNT; i++){
@@ -175,7 +216,7 @@ enum Cin_LoaderError Cin_LoaderFinalize(struct Cin_Loader *ld,
 }
 
 void Cin_DestroySound(struct Cin_Sound *snd){
-    snd->~Cin_Sound();
+    snd->kill();
 }
 
 enum Cin_SoundError Cin_SoundPlay(struct Cin_Sound *snd){

@@ -4,11 +4,12 @@
 OBJ=.obj
 
 PATHSEP= \ 
+MIXER_TYPE=win32
 
 LINK=link
 LINKFLAGS=/NOLOGO /DLL /OUT:cinnamon.dll /PDB:cinnamon.pdb
 CL=cl
-CLFLAGS=/nologo /GF /EHsc /arch:SSE /Zi /c /WX /DCIN_INTERNAL /I$(MAKEDIR)\include /I$(MAKEDIR)
+CLFLAGS=/nologo /GF /EHsc /arch:SSE /Zi /c /WX /DCIN_INTERNAL /I$(MAKEDIR)\include /I$(MAKEDIR) /I$(MAKEDIR)\mixer
 CFLAGS=$(CLFLAGS) /O1 /W2
 CXXFLAGS=$(CLFLAGS) /Os /W3
 
@@ -22,6 +23,13 @@ cin_common.obj: $(CIN_COMMON_DEPS)
 
 cin_loader_soft.obj: $(CIN_LOADER_SOFT_DEPS)
 	$(CL) $(CFLAGS) cin_loader_soft.c
+
+# Mixer objects 
+cin_lock_win32.obj: mixer\win32\cin_lock_win32.c mixer\cin_lock.h
+	$(CL) $(CXXFLAGS) mixer\win32\cin_lock_win32.c
+
+cin_thread_win32.obj: mixer\win32\cin_thread_win32.c mixer\cin_thread.h
+	$(CL) $(CXXFLAGS) mixer\win32\cin_thread_win32.c
 
 # DirectSound objects
 cin_driver_dsound.obj: $(CIN_DRIVER_DSOUND_DEPS)

@@ -9,193 +9,88 @@
 #include "cin_loader_soft.h"
 #include "cin_common.h"
 #include "cin_sound_dsound.hpp"
+#include "cin_lock.h"
+#include "cin_thread.h"
+#include "cin_select.h"
 
-#include <dsound.h>
-#include <objbase.h>
-#include <atlbase.h>
-
-#include <assert.h>
 #include <vector>
-#include <utility>
-#include <algorithm>
 #include <new>
+    
+void Cin_Driver::signalNewEvents(){
+    SetEvent(m_handles.front());
+}
 
-class Cin_DriverThreadData {
-    // The first element is a event to signal that there is a new element to add.
-    std::vector<HANDLE> m_handles;
-    std::vector<Cin_Sound*> m_sounds;
-    
-    const HANDLE m_mutex;
-    
-    // If the HANDLE is NULL, it indicates we should remove the sound.
-    std::vector<std::pair<HANDLE, Cin_Sound*> > m_to_add;
-    
-    bool m_was_started;
-    HANDLE m_thread;
-    
-public:
-    
-    Cin_DriverThreadData(bool start = false)
-      : m_mutex(CreateMutex(NULL, FALSE, NULL))
-      , m_was_started(false)
-      , m_thread(NULL){
-        assert(m_mutex != NULL);
-        if(start){
-            startThread();
+void Cin_Driver::run(){
+    while(true){
+        const DWORD signal =
+            WaitForMultipleObjects(count, handles, FALSE, INFINITE);
+        
+        if(signal == WAIT_OBJECT_0){
+            if(!processEventQueue())
+                return;
+        }
+        else{
+            assert(signal > WAIT_OBJECT_0);
+            const size_t which = (signal - WAIT_OBJECT_0) - 1;
+            assert(which < m_sounds.size());
+            m_sounds[which]->onEvent();
         }
     }
+}
+
+void Cin_Driver::remove(const struct Cin_Sound *sound){
+    const size_t num_sounds = m_sounds.size();
+    assert(num_sounds + 1 == m_handles.size());
+    assert(num_sounds != 0);
     
-    ~Cin_DriverThreadData(){
-        if(m_thread != NULL){
-            setDie();
-            WaitForSingleObject(m_thread, INFINITE);
-            CloseHandle(m_thread);
-        }
-        CloseHandle(m_mutex);
-    }
-    
-    void addEvent(HANDLE hnd, Cin_Sound *snd){
-        assert(snd != NULL);
-        assert(hnd != NULL);
-        if(snd == NULL || hnd == NULL)
-            return;
+    {
+        const std::vector<Cin_Sound*>::iterator iter =
+            std::find(m_sounds.begin(), m_sounds.end(), sound);
         
-        WaitForSingleObject(m_mutex, INFINITE);
-        m_to_add.push_back(std::pair<HANDLE, Cin_Sound*>(hnd, snd));
+        assert(iter != m_sounds.end());
         
-        if(!m_was_started)
-            startThread();
+        const size_t i = std::distance(m_sounds.begin(), iter);
         
-        SetEvent(m_handles[0]);
-        ReleaseMutex(m_mutex);
-    }
-    
-    void removeEvent(const Cin_Sound *snd){
-        assert(snd != NULL);
-        if(snd == NULL)
-            return;
-        WaitForSingleObject(m_mutex, INFINITE);
-        m_to_add.push_back(std::pair<HANDLE, Cin_Sound*>(NULL, (Cin_Sound *)snd));
-        SetEvent(m_handles.front());
-        ReleaseMutex(m_mutex);
-    }
-    
-    void setDie(){
-        WaitForSingleObject(m_mutex, INFINITE);
-        m_to_add.push_back(std::pair<HANDLE, Cin_Sound*>(NULL, NULL));
-        SetEvent(m_handles.front());
-        ReleaseMutex(m_mutex);
-    }
-    
-    void run(){
-        assert(m_handles.size() == 1);
-cin_driver_thread_run:
         {
-            HANDLE *const handles = &(m_handles[0]);
-            const unsigned count = m_handles.size();
-            assert(count == m_sounds.size());
-            const DWORD signal =
-                WaitForMultipleObjects(count, handles, FALSE, INFINITE);
-            
-            if(signal == WAIT_OBJECT_0){
-                WaitForSingleObject(m_mutex, INFINITE);
-                
-                assert(!m_to_add.empty());
-                
-                do{
-                    
-                    const std::pair<HANDLE, Cin_Sound*> &to_add = m_to_add.back();
-                    
-                    if(to_add.second == NULL){
-                        std::for_each(m_handles.begin(), m_handles.end(), CloseHandle);
-                        ReleaseMutex(m_mutex);
-                        return;
-                    }
-                    
-                    if(to_add.first == NULL){
-                        assert(count == m_sounds.size());
-                        
-                        std::vector<Cin_Sound*>::iterator snd_iter =
-                            std::find(m_sounds.begin(), m_sounds.end(), to_add.second);
-                        
-                        assert(snd_iter != m_sounds.end());
-                        
-                        const size_t num = std::distance(m_sounds.begin(), snd_iter);
-                        std::vector<HANDLE>::iterator hnd_iter =
-                            m_handles.begin() + num;
-                        
-                        CloseHandle(*hnd_iter);
-                        
-                        // Swap in the final objects.
-                        *hnd_iter = m_handles.back();
-                        *snd_iter = m_sounds.back();
-                        
-                        m_handles.pop_back();
-                        m_sounds.pop_back();
-                    }
-                    else{
-                        m_handles.push_back(to_add.first);
-                        m_sounds.push_back(to_add.second);
-                    }
-                    
-                    assert(m_handles.size() == m_sounds.size());
-                    
-                    m_to_add.pop_back();
-                    
-                }while(!m_to_add.empty());
-                
-                ReleaseMutex(m_mutex);
-            }
-            else{
-                m_sounds[signal - WAIT_OBJECT_0]->onEvent();
-            }
+            struct Cin_Sound *&snd = m_sounds[i];
+            delete m_sounds[i];
+            snd = m_sounds.back();
         }
-        goto cin_driver_thread_run;
+        {
+            HANDLE &hnd = m_handles[i + 1];
+            CloseHandle(hnd);
+            hnd = m_handles.back();
+        }
     }
     
-    static DWORD WINAPI ThreadProc(void *data){
-        static_cast<Cin_DriverThreadData*>(data)->run();
-        return 0;
-    }
-    
-    void startThread(){
-        assert(m_was_started == false);
-        
-        m_was_started = true;
-        
-        assert(m_handles.empty());
-        assert(m_sounds.empty());
-        
-        m_handles.push_back(CreateEvent(NULL, FALSE, FALSE, NULL));
-        m_sounds.push_back(NULL);
-        
-        m_thread = CreateThread(NULL, 0L, ThreadProc, this, 0, NULL);
-    }
-};
+    m_sounds.pop_back();
+    m_handles.pop_back();
+}
 
-struct Cin_Driver{
-    
-    CComPtr<IDirectSound8> m_dsound;
-    Cin_DriverThreadData m_thread;
-    
-    Cin_Driver(){
-        CoInitialize(NULL);
+void Cin_Driver::add(struct Cin_Sound *sound, uintptr_t event){
+    m_handles.push_back(event);
+    m_sounds.push_back(sound);
+}
+
+Cin_Driver::Cin_Driver(){
+    m_handles.push_back(CreateEvent(NULL, FALSE, FALSE, NULL));
+    CoInitialize(NULL);
+    {
+        const HRESULT result = DirectSoundCreate8(NULL, &m_dsound, NULL);
+        assert(SUCCEEDED(result))
     }
-    
-    ~Cin_Driver(){
-        CoUninitialize();
+    {
+        const HWND window = GetDesktopWindow();
+         const HRESULT result =
+            m_dsound->SetCooperativeLevel(window, DSSCL_PRIORITY);
+        assert(SUCCEEDED(result));
     }
+}
     
-    bool init(){
-        HRESULT result =
-            DirectSoundCreate8(NULL, &m_dsound, NULL);
-        if(SUCCEEDED(result)){
-            const HWND window = GetDesktopWindow();
-            result = m_dsound->SetCooperativeLevel(window, DSSCL_PRIORITY);
-        }
-        return SUCCEEDED(result);
-    }
-};
+Cin_Driver::~Cin_Driver(){
+    CoUninitialize();
+    std::for_each(m_handles.begin(), m_handles.end(), CloseHandle);
+}
 
 unsigned Cin_StructDriverSize(){
     return sizeof(struct Cin_Driver);
@@ -203,10 +98,7 @@ unsigned Cin_StructDriverSize(){
 
 enum Cin_DriverError Cin_CreateDriver(struct Cin_Driver *drv){
     new (drv) Cin_Driver();
-    if(drv->init())
-        return Cin_eDriverSuccess;
-    else
-        return Cin_eDriverFailure;
+    return Cin_eDriverSuccess;
 }
 
 void Cin_DestroyDriver(struct Cin_Driver *drv){
@@ -282,18 +174,6 @@ enum Cin_LoaderError Cin_CreateLoader(struct Cin_Loader *out,
 
 
 CIN_PRIVATE(CComPtr<IDirectSound8>&) Cin_GetDriver(struct Cin_Driver *drv){
-    return drv->m_dsound;
-}
-
-CIN_PRIVATE(void) Cin_AddEvent(struct Cin_Driver *drv,
-    Cin_Sound *snd,
-    HANDLE hnd){
-    
-    drv->m_thread.addEvent(hnd, snd);
-}
-
-CIN_PRIVATE(void) Cin_RemoveEvent(struct Cin_Driver *drv,
-    const Cin_Sound *snd){
-    
-    drv->m_thread.removeEvent(snd);
+    assert(drv != NULL);
+    return drv->getDirectSound();
 }

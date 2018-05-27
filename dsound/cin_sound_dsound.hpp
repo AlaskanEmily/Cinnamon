@@ -28,14 +28,13 @@ struct Cin_Driver;
 struct Cin_Sound{
 private:
     WAVEFORMATEX m_fmt;
-    DSBUFFERDESC m_descriptor;
     CComPtr<IDirectSoundBuffer> m_buffer;
     CComPtr<IDirectSound8> m_dsound;
     struct Cin_Driver *m_driver;
     HANDLE m_event;
     struct Cin_LoaderData *const m_data;
     volatile LONG m_at;
-    bool m_die_at_next_event;
+    bool m_die_at_next_event; // Set when we know the next callback of onEvent should be the last.
     
     static inline WORD FormatTag(enum Cin_Format format){
         switch(format){
@@ -67,48 +66,9 @@ private:
             return m_byte_length;
     }
     
-    inline void setupDescriptor(){
-        m_descriptor.dwSize = sizeof(DSBUFFERDESC);
-        m_descriptor.dwFlags =
-            DSBCAPS_CTRLPOSITIONNOTIFY |
-            DSBCAPS_GETCURRENTPOSITION2 |
-            DSBCAPS_GLOBALFOCUS;
-        m_descriptor.dwBufferBytes = bufferSize();
-        m_descriptor.dwReserved = 0;
-        m_descriptor.lpwfxFormat = &m_fmt;
-        m_descriptor.guid3DAlgorithm = DS3DALG_DEFAULT;
-    }
-    
-    inline void setupFormat(unsigned sample_rate,
+    void setupFormat(unsigned sample_rate,
         unsigned channels,
-        enum Cin_Format format){
-            
-#ifndef NDEBUG
-        // Poison the uninitialized format
-        memset(&m_fmt, 0xFF, sizeof(WAVEFORMATEX));
-#endif
-        
-        // Set format tag
-        m_fmt.wFormatTag = FormatTag(format);
-        
-        // Set channels
-        assert(channels == 1 || channels == 2);
-        m_fmt.nChannels = channels;
-        
-        // Set sample rate
-        m_fmt.nSamplesPerSec = sample_rate;
-        
-        // Block align
-        const unsigned align = channels * Cin_BytesPerSample(format);
-        m_fmt.nBlockAlign = align;
-        
-        m_fmt.nAvgBytesPerSec = sample_rate * align;
-        
-        // Set bits per sample
-        m_fmt.wBitsPerSample = Cin_BytesPerSample(format) * 8;
-        
-        m_fmt.cbSize = 0;
-    }
+        enum Cin_Format format);
     
     unsigned write(unsigned len, unsigned &wrote);
     inline unsigned write(const unsigned len){
@@ -141,6 +101,11 @@ public:
     inline void stop(){
         m_buffer->Stop();
         InterlockedExchange(&m_at, 0);
+    }
+    
+    inline void kill(){
+        stop();
+        m_driver->removeSound(this);
     }
     
     void onEvent();
