@@ -3,6 +3,7 @@
 
 OBJ?=.o
 
+PATHSEP=/
 include cin_build.mk
-include cin_build_openal.mk
+include openal/cin_build_openal.mk
 include cin_build_gcc.mk
