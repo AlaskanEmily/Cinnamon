@@ -93,20 +93,11 @@ public:
     
     bool init();
     
-    inline void play(){
-        m_buffer->Play(0, 0, DSBPLAY_LOOPING);
-        m_die_at_next_event = false;
-    }
+    void play();
     
-    inline void stop(){
-        m_buffer->Stop();
-        InterlockedExchange(&m_at, 0);
-    }
+    void stop();
     
-    inline void kill(){
-        stop();
-        m_driver->removeSound(this);
-    }
+    void kill();
     
     void onEvent();
     

@@ -39,7 +39,7 @@ bool Cin_DriverMixer::processEventQueue(){
     for(std::vector<event_t>::const_iterator i = m_event_queue.begin();
         i != m_event_queue.end(); i++){
         
-        const Cin_Sound *const sound = i->second;
+        Cin_Sound *const sound = i->second;
         if(const uintptr_t event = i->first){
             add(sound, event);
         }

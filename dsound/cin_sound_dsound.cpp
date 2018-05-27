@@ -105,7 +105,7 @@ Cin_Sound::Cin_Sound(struct Cin_Driver *drv,
     assert(data != NULL);
     // Setup the format.
     setupFormat(sample_rate, channels, format);
-    setupDescriptor();
+    init();
 }
 
 Cin_Sound::~Cin_Sound(){
@@ -137,7 +137,7 @@ bool Cin_Sound::init(){
         if(bufferSize() != m_byte_length){
             m_event = CreateEvent(NULL, FALSE, FALSE, NULL);
             setEvents();
-            m_driver->addSound(this, m_event);
+            m_driver->addSound(this, (uintptr_t)m_event);
         }
         else{
             for(unsigned i = 0; i < CIN_DSOUND_NOTIFY_COUNT; i++){
@@ -184,6 +184,22 @@ void Cin_Sound::onEvent(){
         
         m_die_at_next_event = true;
     }
+}
+
+    
+void Cin_Sound::play(){
+    m_buffer->Play(0, 0, DSBPLAY_LOOPING);
+    m_die_at_next_event = false;
+}
+
+void Cin_Sound::stop(){
+    m_buffer->Stop();
+    InterlockedExchange(&m_at, 0);
+}
+
+void Cin_Sound::kill(){
+    stop();
+    m_driver->removeSound(this);
 }
 
 unsigned Cin_StructSoundSize(){

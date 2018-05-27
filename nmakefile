@@ -31,6 +31,9 @@ cin_lock_win32.obj: mixer\win32\cin_lock_win32.c mixer\cin_lock.h
 cin_thread_win32.obj: mixer\win32\cin_thread_win32.c mixer\cin_thread.h
 	$(CL) $(CXXFLAGS) mixer\win32\cin_thread_win32.c
 
+cin_driver_mixer.obj: mixer\cin_driver_mixer.cpp mixer\cin_driver_mixer.hpp
+	$(CL) $(CXXFLAGS) mixer\cin_driver_mixer.cpp
+
 # DirectSound objects
 cin_driver_dsound.obj: $(CIN_DRIVER_DSOUND_DEPS)
 	$(CL) $(CXXFLAGS) dsound\cin_driver_dsound.cpp

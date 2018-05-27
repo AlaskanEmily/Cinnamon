@@ -6,6 +6,7 @@
  */
 
 #include "cin_driver.h"
+#include "cin_driver_dsound.hpp"
 #include "cin_loader_soft.h"
 #include "cin_common.h"
 #include "cin_sound_dsound.hpp"
@@ -13,6 +14,7 @@
 #include "cin_thread.h"
 #include "cin_select.h"
 
+#include <algorithm>
 #include <vector>
 #include <new>
     
@@ -22,6 +24,8 @@ void Cin_Driver::signalNewEvents(){
 
 void Cin_Driver::run(){
     while(true){
+        const HANDLE *const handles = (HANDLE*)(&(m_handles.front()));
+        const unsigned count = m_handles.size();
         const DWORD signal =
             WaitForMultipleObjects(count, handles, FALSE, INFINITE);
         
@@ -51,12 +55,17 @@ void Cin_Driver::remove(const struct Cin_Sound *sound){
         
         const size_t i = std::distance(m_sounds.begin(), iter);
         
+        // Instead of doing an erase() which can cause a large amount of data
+        // copying to shift the remaining length of the vector, we swap the
+        // element that we are removing with the last element in the vector.
         {
+            // Swap the sound locations
             struct Cin_Sound *&snd = m_sounds[i];
-            delete m_sounds[i];
+            delete snd;
             snd = m_sounds.back();
         }
         {
+            // Swap the handle locations
             HANDLE &hnd = m_handles[i + 1];
             CloseHandle(hnd);
             hnd = m_handles.back();
@@ -68,7 +77,7 @@ void Cin_Driver::remove(const struct Cin_Sound *sound){
 }
 
 void Cin_Driver::add(struct Cin_Sound *sound, uintptr_t event){
-    m_handles.push_back(event);
+    m_handles.push_back((HANDLE)event);
     m_sounds.push_back(sound);
 }
 
@@ -77,7 +86,7 @@ Cin_Driver::Cin_Driver(){
     CoInitialize(NULL);
     {
         const HRESULT result = DirectSoundCreate8(NULL, &m_dsound, NULL);
-        assert(SUCCEEDED(result))
+        assert(SUCCEEDED(result));
     }
     {
         const HWND window = GetDesktopWindow();

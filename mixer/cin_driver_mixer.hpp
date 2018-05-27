@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <vector>
 
+struct Cin_Sound;
+
 class Cin_DriverMixer {
     
 protected:
@@ -33,6 +35,7 @@ private:
     
 protected:
     
+    // The lock will be claimed while this is called.
     virtual void signalNewEvents() = 0;
     
     virtual void run() = 0;

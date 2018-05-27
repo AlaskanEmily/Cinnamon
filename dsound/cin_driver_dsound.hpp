@@ -38,8 +38,8 @@ protected:
     
 public:
     
-    inline IDirectSound8 *getDirectSound(){
-        return (IDirectSound8*)m_dsound;
+    inline CComPtr<IDirectSound8> &getDirectSound(){
+        return m_dsound;
     }
     
     Cin_Driver();

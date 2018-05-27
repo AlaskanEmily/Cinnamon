@@ -9,13 +9,6 @@
 
 #include <pthread.h>
 
-typedef void (*thread_callback_t)(void *arg);
-
-struct Cin_Thread {
-    void *thread, *arg;
-    thread_callback_t cb;
-};
-
 static void *cin_thread_wrapper(void *data){
     struct Cin_Thread *const thread = data;
     thread->cb(thread->arg);

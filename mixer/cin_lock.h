@@ -9,6 +9,10 @@
 #define CIN_LOCK_H
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct Cin_Lock {
     void *data;
 };
@@ -20,5 +24,9 @@ void Cin_DestroyLock(struct Cin_Lock *lock);
 void Cin_ClaimLock(struct Cin_Lock *lock);
 
 void Cin_ReleaseLock(struct Cin_Lock *lock);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* CIN_LOCK_H */
