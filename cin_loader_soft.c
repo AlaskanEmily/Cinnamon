@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 unsigned Cin_StructLoaderSize(){
     return sizeof(struct Cin_Loader);

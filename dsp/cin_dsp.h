@@ -130,8 +130,8 @@ CIN_DSP_EXPORT(void) Cin_DSP_MixerFormatSetNumChannels(
  * format specified by @p in_format to the destination format of @p out_format.
  */
 CIN_DSP_EXPORT(unsigned) Cin_DSP_ConversionSize(unsigned num_bytes,
-    const struct Cin_MixerFormat *in_format,
-    const struct Cin_MixerFormat *out_format);
+    const struct Cin_DSP_MixerFormat *in_format,
+    const struct Cin_DSP_MixerFormat *out_format);
 
 /**
  * @brief Converts samples from one format to another
@@ -143,13 +143,13 @@ CIN_DSP_EXPORT(unsigned) Cin_DSP_ConversionSize(unsigned num_bytes,
  * Cin_DSP_ConversionSize requires for the formats.
  */
 CIN_DSP_EXPORT(unsigned) Cin_DSP_Convert(unsigned in_bytes,
-    const struct Cin_MixerFormat *in_format,
+    const struct Cin_DSP_MixerFormat *in_format,
     const void *in_data,
-    const struct Cin_MixerFormat *out_format,
+    const struct Cin_DSP_MixerFormat *out_format,
     void *out_data);
 
 CIN_DSP_EXPORT(unsigned) Cin_DSP_Mix(unsigned num_bytes,
-    const struct Cin_MixerFormat *format,
+    const struct Cin_DSP_MixerFormat *format,
     const void *in_data0,
     const void *in_data1,
     void *out_data);

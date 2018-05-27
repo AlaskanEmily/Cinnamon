@@ -26,7 +26,8 @@ struct Cin_Sound;
  * @brief Errors that occur when manipulating a Sound.
  */
 enum Cin_SoundError {
-    Cin_eSoundSuccess /**< No error occured */
+    Cin_eSoundSuccess, /**< No error occured */
+    Cin_eSoundFailure
 };
 
 /**
