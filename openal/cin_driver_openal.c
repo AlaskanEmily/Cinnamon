@@ -186,7 +186,7 @@ CIN_PRIVATE_PURE(ALuint)
 }
 
 CIN_PRIVATE(int) Cin_CinExtension(const struct Cin_Driver *drv, int ext){
-    if(drv->ext & 1 == 0){
+    if((drv->ext & 1) == 0){
         short s = 0;
         alcMakeContextCurrent(drv->ctx);
         if(alIsExtensionPresent("AL_EXT_float32"))
@@ -223,11 +223,11 @@ CIN_PRIVATE(int) Cin_CleanOpenALSound(ALuint snd, ALuint *out){
     ALint i;
     alGetSourcei(snd, AL_BUFFERS_PROCESSED, &i);
     if(i > 0){
+        ALuint buffers[16];
         if(out != NULL){
             i--;
             alSourceUnqueueBuffers(snd, 1, out);
         }
-        ALuint buffers[16];
         do{
             const unsigned to_delete = (i >= 16) ? 16 : i;
             alSourceUnqueueBuffers(snd, to_delete, buffers);
