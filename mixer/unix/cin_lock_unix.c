@@ -8,9 +8,10 @@
 #include "cin_lock.h"
 
 #include <pthread.h>
+#include <stdlib.h>
 
 void Cin_CreateLock(struct Cin_Lock *lock){
-    const void *mutex = malloc(sizeof(pthread_mutex_t));
+    void *mutex = malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(mutex, NULL);
     lock->data = mutex;
 }

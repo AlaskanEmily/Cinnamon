@@ -28,6 +28,12 @@ cin_lock_unix.o: mixer/unix/cin_lock_unix.c mixer/cin_lock.h
 cin_thread_unix.o: mixer/unix/cin_thread_unix.c mixer/cin_thread.h
 	$(CC) $(CFLAGS) -c mixer/unix/cin_thread_unix.c -o cin_thread_unix.o
 
+cin_driver_mixer.o: mixer/cin_driver_mixer.cpp mixer/cin_driver_mixer.hpp mixer/cin_thread.h mixer/cin_lock.h
+	$(CXX) $(CXXFLAGS) -c mixer/cin_driver_mixer.cpp -o cin_driver_mixer.o
+
+cin_driver_mixer_ops.o: mixer/cin_driver_mixer_ops.cpp mixer/cin_driver_mixer_ops.h mixer/cin_driver_mixer.hpp 
+	$(CXX) $(CXXFLAGS) -c mixer/cin_driver_mixer_ops.cpp -o cin_driver_mixer_ops.o
+
 # OpenAL objects
 cin_loader_openal.o: $(CIN_LOADER_OPENAL_DEPS)
 	$(CC) $(CFLAGS) -c openal/cin_loader_openal.c -o cin_loader_openal.o

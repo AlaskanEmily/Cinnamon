@@ -8,6 +8,7 @@
 #include "cin_thread.h"
 
 #include <pthread.h>
+#include <stdlib.h>
 
 static void *cin_thread_wrapper(void *data){
     struct Cin_Thread *const thread = data;

@@ -7,6 +7,8 @@
 
 #include "cin_driver_mixer.hpp"
 
+#include <stdlib.h>
+
 Cin_DriverMixer::Cin_DriverMixer()
   : m_dying(false)
   , m_started(false){
