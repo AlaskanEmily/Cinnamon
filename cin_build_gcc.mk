@@ -9,8 +9,8 @@ CXXFLAGS=$(CCFLAGS) -std=c++98 -fno-rtti -fno-exceptions
 LINKFLAGS=-g -fPIC
 
 # Common objects
-cin_common.obj: $(CIN_COMMON_DEPS)
-	$(CC) $(CFLAGS) cin_common.c
+cin_common.o: $(CIN_COMMON_DEPS)
+	$(CC) $(CFLAGS) cin_common.c -o cin_common.o
 
 # OpenAL objects
 cin_loader_openal.o: $(CIN_LOADER_OPENAL_DEPS)
@@ -26,7 +26,7 @@ cin_sound_openal.o: $(CIN_SOUND_OPENAL_DEPS)
 sine_test.o: $(SINE_TEST_DEPS)
 	$(CC) $(CFLAGS) -c sine_test.c -o sine_test.o
 
-openal: $(OPENAL_OBJECTS) cin_common.obj $(TEST_OBJS)
+openal: $(OPENAL_OBJECTS) cin_common.o $(TEST_OBJS)
 	ar rc x.a $(OPENAL_OBJECTS)
 	ranlib x.a
 	mv x.a libcinnamon.a
