@@ -33,8 +33,8 @@ private:
     struct Cin_Driver *m_driver;
     HANDLE m_event;
     struct Cin_LoaderData *const m_data;
+    // Byte-wise at
     volatile LONG m_at;
-    bool m_die_at_next_event; // Set when we know the next callback of onEvent should be the last.
     
     static inline WORD FormatTag(enum Cin_Format format){
         switch(format){
@@ -53,12 +53,17 @@ private:
         }
     }
     
-    inline unsigned bufferSize() {
-        // Buffer size is 2 seconds
+    inline unsigned numBuffers() const {
+        const unsigned buffer_size = bufferSize();
+        return (m_byte_length + buffer_size - 1) / buffer_size;
+    }
+    
+    inline unsigned bufferSize() const {
+        // Buffer size is 2 seconds.
         const unsigned max = 
             m_fmt.nChannels *
             m_fmt.nSamplesPerSec *
-            m_fmt.wBitsPerSample / 4;
+            m_fmt.wBitsPerSample >> 3;
         
         if(max < m_byte_length)
             return max;

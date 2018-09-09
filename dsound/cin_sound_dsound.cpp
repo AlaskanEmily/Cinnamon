@@ -27,7 +27,7 @@ unsigned Cin_Sound::write(unsigned len, unsigned &wrote) {
     wrote = count0 + count1;
     InterlockedExchange(&m_at, position + count0 + count1);
     
-    return position;
+    return position + wrote;
 }
 
 void Cin_Sound::setupFormat(unsigned sample_rate,
@@ -74,19 +74,27 @@ void Cin_Sound::setEvents(){
     assert(m_event != NULL);
     assert(notify != NULL);
     
-    // Set up write notifications
-    DSBPOSITIONNOTIFY notes[CIN_DSOUND_NOTIFY_COUNT + 2];
-    const unsigned buffer_size = bufferSize();
-    for(unsigned i = 0; i < CIN_DSOUND_NOTIFY_COUNT; i++){
-        const unsigned offset = (i * buffer_size / CIN_DSOUND_NOTIFY_COUNT);
-        notes[i].dwOffset = offset;
-        notes[i].hEventNotify = m_event;
+    const unsigned num_buffers = numBuffers();
+    assert(num_buffers > 0);
+    if(num_buffers != 1){
+        // Set up write notifications
+        const unsigned buffer_size = bufferSize();
+        DSBPOSITIONNOTIFY notes[CIN_DSOUND_NOTIFY_COUNT];
+        for(unsigned i = 0; i < CIN_DSOUND_NOTIFY_COUNT; i++){
+            const unsigned offset = (i * buffer_size / CIN_DSOUND_NOTIFY_COUNT);
+            notes[i].dwOffset = offset;
+            notes[i].hEventNotify = m_event;
+        }
+        notify->SetNotificationPositions(CIN_DSOUND_NOTIFY_COUNT, notes);
+        notify->Release();
     }
-    notes[CIN_DSOUND_NOTIFY_COUNT].dwOffset = DSBPN_OFFSETSTOP;
-    notes[CIN_DSOUND_NOTIFY_COUNT].hEventNotify = m_event;
-    
-    notify->SetNotificationPositions(CIN_DSOUND_NOTIFY_COUNT + 1, notes);
-    notify->Release();
+    else{
+        DSBPOSITIONNOTIFY note;
+        note.dwOffset = 0;
+        note.hEventNotify = m_event;
+        notify->SetNotificationPositions(1, &note);
+        notify->Release();
+    }
 }
 
 Cin_Sound::Cin_Sound(struct Cin_Driver *drv,
@@ -153,42 +161,19 @@ bool Cin_Sound::init(){
 }
 
 void Cin_Sound::onEvent(){
-
-    if(m_die_at_next_event){
-        m_buffer->Stop();
-        return;
-    }
+    static int i = 0;
     
     const unsigned to_write = (CIN_DSOUND_NOTIFY_COUNT < 3) ?
         min(m_byte_length - m_at, bufferSize()) :
-        min(m_byte_length - m_at, (bufferSize() << 1) / CIN_DSOUND_NOTIFY_COUNT);
+        min(m_byte_length - m_at, (bufferSize()) / CIN_DSOUND_NOTIFY_COUNT);
     
     const unsigned at = write(to_write);
-    
-    if(at >= m_byte_length){
-        IDirectSoundNotify8 *notify;
-        const HRESULT query_result =
-            m_buffer->QueryInterface(IID_IDirectSoundNotify8, (void**)&notify);
-        
-        if(FAILED(query_result)){
-            puts("QUERY FAIL");
-            return;
-        }
-        
-        DSBPOSITIONNOTIFY note;
-        note.dwOffset = DSBPN_OFFSETSTOP;
-        note.hEventNotify = m_event;
-        notify->SetNotificationPositions(1, &note);
-        notify->Release();
-        
-        m_die_at_next_event = true;
-    }
+    if(at >= m_byte_length)
+        m_buffer->Stop();
 }
 
-    
 void Cin_Sound::play(){
     m_buffer->Play(0, 0, DSBPLAY_LOOPING);
-    m_die_at_next_event = false;
 }
 
 void Cin_Sound::stop(){
