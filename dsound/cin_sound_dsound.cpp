@@ -86,15 +86,14 @@ void Cin_Sound::setEvents(){
             notes[i].hEventNotify = m_event;
         }
         notify->SetNotificationPositions(CIN_DSOUND_NOTIFY_COUNT, notes);
-        notify->Release();
     }
     else{
         DSBPOSITIONNOTIFY note;
         note.dwOffset = 0;
         note.hEventNotify = m_event;
         notify->SetNotificationPositions(1, &note);
-        notify->Release();
     }
+    notify->Release();
 }
 
 Cin_Sound::Cin_Sound(struct Cin_Driver *drv,
