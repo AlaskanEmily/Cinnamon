@@ -1,0 +1,19 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+all: cin_dsound.lib
+
+OBJECTS=cin_dsound.obj cin_dsound_driver.obj cin_dsound_sound.obj
+HEADERS=cin_dsound_driver.hpp cin_dsound_sound.hpp ..\cinnamon.h ..\cin_export.h ..\common\cin_soft_loader.h
+
+cin_dsound.lib: $(OBJECTS)
+	lib $(LIBFLAGS) /OUT:cin_dsound.lib $(OBJECTS)
+
+cin_dsound.obj: cin_dsound.cpp $(HEADERS)
+	cl $(CLFLAGS) cin_dsound.cpp
+
+cin_dsound_driver.obj: cin_dsound_driver.cpp $(HEADERS)
+	cl $(CLFLAGS) cin_dsound_driver.cpp
+
+cin_dsound_sound.obj: cin_dsound_sound.cpp $(HEADERS)
+	cl $(CLFLAGS) cin_dsound_sound.cpp

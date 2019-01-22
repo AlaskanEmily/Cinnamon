@@ -1,0 +1,12 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+all: cin_common.lib
+
+OBJECTS=cin_soft_loader.obj
+
+cin_common.lib: $(OBJECTS)
+	lib $(LIBFLAGS) /OUT:cin_common.lib $(OBJECTS)
+
+cin_soft_loader.obj: cin_soft_loader.c cin_soft_loader.h
+	cl $(CLFLAGS) cin_soft_loader.c

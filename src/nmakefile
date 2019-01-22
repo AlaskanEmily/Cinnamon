@@ -1,0 +1,40 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+LINK=link
+LINKFLAGS=/NOLOGO /DLL /OUT:cinnamon.dll /PDB:cinnamon.pdb /DEF:cinnamon.def
+CLFLAGS=/nologo /GF /EHsc /arch:SSE /Zi /c /WX /DCIN_INTERNAL /I$(MAKEDIR) /I$(MAKEDIR)\common /Os /W3 /DCIN_DLL=1
+LIBFLAGS=/NOLOGO
+
+all: dsound sine_test.exe aucat.exe
+
+common_lib:
+	cd common && $(MAKE) /nologo /fnmakefile CLFLAGS="$(CLFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+
+dsound_lib:
+	cd dsound && $(MAKE) /nologo /fnmakefile CLFLAGS="$(CLFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+
+openal_lib:
+	cd openal && $(MAKE) /nologo /fnmakefile CLFLAGS="$(CLFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+
+# This is needed to hint the linker what machine to use. This is important on cross compilers, where the linker uses the host platform.
+dummy.obj:
+    cl $(CLFLAGS) /c /TP cinnamon.h /Fodummy.obj
+
+dsound: dsound_lib common_lib dummy.obj cinnamon.def
+	$(LINK) /DEBUG dummy.obj dsound\cin_dsound.lib common\cin_common.lib dsound.lib dxguid.lib ole32.lib user32.lib $(LINKFLAGS)
+
+openal: openal_lib common_lib dummy.obj cinnamon.def
+	$(LINK) /DEBUG dummy.obj openal\cin_openal.lib lib\OpenAL32.lib $(LINKFLAGS)
+
+sine_test.obj:
+	cl $(CLFLAGS) /c sine_test.c
+
+sine_test.exe: dsound sine_test.obj
+	$(LINK) /DEBUG sine_test.obj cinnamon.lib /NOLOGO /OUT:sine_test.exe
+
+aucat.obj:
+	cl $(CLFLAGS) /c aucat.c
+
+aucat.exe: dsound aucat.obj
+	$(LINK) /DEBUG aucat.obj cinnamon.lib /NOLOGO /OUT:aucat.exe
