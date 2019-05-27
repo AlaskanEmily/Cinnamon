@@ -5,9 +5,7 @@
 
 #define _POSIX_C_SOURCE 199309L
 
-#include "cin_driver.h"
-#include "cin_loader.h"
-#include "cin_sound.h"
+#include "cinnamon.h"
 
 #include <assert.h>
 #include <stdlib.h>

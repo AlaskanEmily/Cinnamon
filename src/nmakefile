@@ -9,7 +9,10 @@ LIBFLAGS=/NOLOGO
 all: dsound sine_test.exe aucat.exe
 
 common_lib:
-	cd common && $(MAKE) /nologo /fnmakefile CLFLAGS="$(CLFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+	cd common && $(MAKE) common /nologo /fnmakefile CLFLAGS="$(CLFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+
+mixer_lib:
+	cd common && $(MAKE) mixer /nologo /fnmakefile CLFLAGS="$(CLFLAGS)" LIBFLAGS="$(LIBFLAGS)"
 
 dsound_lib:
 	cd dsound && $(MAKE) /nologo /fnmakefile CLFLAGS="$(CLFLAGS)" LIBFLAGS="$(LIBFLAGS)"

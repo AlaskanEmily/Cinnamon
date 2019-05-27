@@ -10,7 +10,7 @@
 #pragma once
 
 #include "cin_export.h"
-#include "cinnamon.h"
+#include "cin_format.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,6 +22,13 @@ extern "C" {
 /* Push the warning about the data[] field */
 #pragma warning(push)
 #pragma warning(disable: 4200)
+
+#define CIN_SOFT_USE_DATA_FIELD
+
+#elif ( __STDC_VERSION__ >= 199901L ) || ( __cplusplus >= 201103L )
+
+#define CIN_SOFT_USE_DATA_FIELD
+
 #endif
 
 /*****************************************************************************/
@@ -29,7 +36,12 @@ extern "C" {
 struct Cin_LoaderData {
     struct Cin_LoaderData *next;
     unsigned len;
+#ifdef CIN_SOFT_USE_DATA_FIELD
     unsigned char data[];
+#define CIN_SOFT_LOADER_DATA(LD) ((LD)->data)
+#else
+#define CIN_SOFT_LOADER_DATA(LD) ((unsigned char *)((LD)+1))
+#endif
 };
 
 /*****************************************************************************/

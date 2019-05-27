@@ -1,17 +1,17 @@
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
 
-# GNU makefile.
+# BSD makefile
 
-include gcc.mk
+.include "gcc.mk"
 
-BACKEND?=openal
+BACKEND?=oss
 
 # Only OpenAL can be compiled without C++ currently.
-ifeq "$(BACKEND)" "openal"
+.if "${BACKEND}" == "openal"
 LINK?=$(CC)
-else
+.else
 LINK=$(CXX)
-endif
+.endif
 
-include unix.mk
+.include "unix.mk"

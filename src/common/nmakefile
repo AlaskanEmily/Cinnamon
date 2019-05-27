@@ -1,12 +1,23 @@
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
 
-all: cin_common.lib
+common: cin_common.lib
+mixer: cin_mixer.lib
 
-OBJECTS=cin_soft_loader.obj
-
-cin_common.lib: $(OBJECTS)
-	lib $(LIBFLAGS) /OUT:cin_common.lib $(OBJECTS)
+cin_common.lib: cin_soft_loader.obj
+	lib $(LIBFLAGS) /OUT:cin_common.lib cin_soft_loader.obj
 
 cin_soft_loader.obj: cin_soft_loader.c cin_soft_loader.h
 	cl $(CLFLAGS) cin_soft_loader.c
+
+
+MIXER_OBJECTS=cin_mixer_sound.obj cin_dsp.obj
+
+cin_mixer.lib: $(MIXER_OBJECTS)
+	lib $(LIBFLAGS) /OUT:cin_mixer.lib $(MIXER_OBJECTS)
+
+cin_mixer_sound.obj: cin_mixer_sound.c cin_mixer_sound.h cin_dsp.h ..\cin_export.h ..\cin_format.h
+	cl $(CLFLAGS) cin_mixer_sound.c
+
+cin_dsp.obj: cin_dsp.cpp cin_dsp.h
+	cl $(CLFLAGS) cin_dsp.cpp

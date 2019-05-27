@@ -5,9 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*****************************************************************************/
+
 unsigned Cin_StructLoaderSize(){
     return sizeof(struct Cin_Loader);
 }
+
+/*****************************************************************************/
 
 CIN_PRIVATE(void) Cin_CreateSoftLoader(struct Cin_Loader *out,
     unsigned sample_rate,
@@ -22,6 +26,8 @@ CIN_PRIVATE(void) Cin_CreateSoftLoader(struct Cin_Loader *out,
     out->bytes_placed = 0;
     out->first = out->last = NULL;
 }
+
+/*****************************************************************************/
 
 enum Cin_LoaderError Cin_LoaderPut(struct Cin_Loader *ld,
     const void *data,
@@ -50,6 +56,8 @@ enum Cin_LoaderError Cin_LoaderPut(struct Cin_Loader *ld,
     return Cin_eLoaderSuccess;
 }
 
+/*****************************************************************************/
+
 CIN_PRIVATE(void) Cin_LoaderFreeData(struct Cin_LoaderData *data){
     if(data == NULL){
         return;
@@ -60,6 +68,8 @@ CIN_PRIVATE(void) Cin_LoaderFreeData(struct Cin_LoaderData *data){
         Cin_LoaderFreeData(next);
     }
 }
+
+/*****************************************************************************/
 
 CIN_PRIVATE(void) Cin_LoaderMemcpy(const struct Cin_LoaderData *data,
     unsigned at,
@@ -79,11 +89,11 @@ CIN_PRIVATE(void) Cin_LoaderMemcpy(const struct Cin_LoaderData *data,
         const unsigned remaining = len - at;
         if(remaining >= count){
             /* Copy out the partial area we care about */
-            memcpy(dest, data->data + at, count);
+            memcpy(dest, CIN_SOFT_LOADER_DATA(data) + at, count);
         }
         else{
             /* Start our copy from the input index. */
-            memcpy(dest, data->data + at, remaining);
+            memcpy(dest, CIN_SOFT_LOADER_DATA(data) + at, remaining);
             if(next)
                 Cin_LoaderMemcpy(next,
                     0,
@@ -95,10 +105,10 @@ CIN_PRIVATE(void) Cin_LoaderMemcpy(const struct Cin_LoaderData *data,
         /* Copy out the max of our len and the count */
         if(len >= count){
             /* This data holds the remaining count. */
-            memcpy(dest, data->data, count);
+            memcpy(dest, CIN_SOFT_LOADER_DATA(data), count);
         }
         else{
-            memcpy(dest, data->data, len);
+            memcpy(dest, CIN_SOFT_LOADER_DATA(data), len);
             if(next)
                 Cin_LoaderMemcpy(next, 0, dest_bytes + len, count - len);
         }

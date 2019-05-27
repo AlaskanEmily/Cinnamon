@@ -10,30 +10,11 @@
 #pragma once
 
 #include "cin_export.h"
+#include "cin_format.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-enum Cin_Format{
-    Cin_eFormatS8,
-    Cin_eFormatS16,
-    Cin_eFormatS32,
-    Cin_eFormatFloat32,
-    Cin_eFormatFloat64,
-    Cin_eFormatULaw8,
-    Cin_eFormatNUM_FORMATS,
-    
-    Cin_eFormatBEGIN = 0,
-    Cin_eFormatEND = (Cin_eFormatNUM_FORMATS - 1)
-};
-
-#define CIN_FORMAT_BYTES_PER_SAMPLE(FMT) ( \
-    ((FMT) == Cin_eFormatS8 || (FMT) == Cin_eFormatULaw8) ? 1 : \
-    ((FMT) == Cin_eFormatS16) ? 2 : \
-    ((FMT) == Cin_eFormatS32 || (FMT) == Cin_eFormatFloat32) ? 4 : \
-    ((FMT) == Cin_eFormatFloat64) ? 8 : 0 \
-    )
 
 /**
  * @defgroup Driver Functions that create, destroy, and manipulate the Driver.
