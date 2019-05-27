@@ -23,6 +23,8 @@ the MPL 2.0, but new files (for instance new platform backends) can use differen
 pull requests containing new files will only be accepted if the code is licensed as MPL 2.0, zlib,
 or public domain.
 
+The mixer code is licensed under the zlib license.
+
 API Usage
 ------------
 
