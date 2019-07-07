@@ -11,16 +11,23 @@
   
   /* For a DLL build, use dllimport. Since we use a DEF file, we do not need
    * to use dllexport. */
-  #if (!defined(CIN_STATIC)) && !defined CIN_INTERNAL
-
-    #define CIN_DLL_EXPORT(X) __declspec(dllimport) X
+  #if (!defined(CIN_STATIC))
   
+    #ifdef CIN_INTERNAL
+    
+      #define CIN_DLL_EXPORT(X) __declspec(dllexport) X
+  
+    #else /* CIN_DLL */
+
+      #define CIN_DLL_EXPORT(X) __declspec(dllimport) X
+    
+    #endif /* CIN_DLL */
+    
   #else /* CIN_DLL */
     
     #define CIN_DLL_EXPORT(X) X
     
-  #endif /* CIN_DLL */
-  
+  #endif
   /* Use the C calling convention for all exported symbols. */
   #define CIN_EXPORT(X) CIN_DLL_EXPORT(X) __cdecl
   
