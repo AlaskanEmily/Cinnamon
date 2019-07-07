@@ -105,10 +105,16 @@ Cin_Sound::Cin_Sound(IDirectSound8 *dsound, const Cin_Loader &ld)
     fmt.Format.wBitsPerSample = bytes_per_sample << 3;
 
     // Check the size of the loader data.
-    unsigned byte_size = 0;
-    for(const struct Cin_LoaderData *i = ld.first, *const end = ld.last; i != end; i = i->next){
-        byte_size += i->len;
+    const unsigned byte_size = ld.bytes_placed;
+#ifndef NDEBUG
+    {
+        unsigned debug_byte_size = 0;
+        for(const struct Cin_LoaderData *i = ld.first; i != NULL; i = i->next){
+            debug_byte_size += i->len;
+        }
+        assert(debug_byte_size == byte_size);
     }
+#endif
 
     DSBUFFERDESC descriptor;
     descriptor.dwSize = sizeof(DSBUFFERDESC);
