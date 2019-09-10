@@ -7,6 +7,8 @@
 
 #include "cinnamon.h"
 #include "cin_openal.h"
+
+#include <stddef.h>
 #include <assert.h>
 
 /*****************************************************************************/
@@ -270,13 +272,14 @@ enum Cin_LoaderError Cin_CreateLoader(struct Cin_Loader *out,
     assert(drv);
     assert(drv->ctx);
     assert(drv->dev);
-    
+#if 0
     {
         const enum Cin_LoaderError err =
             Cin_FormatCompatible(drv, sample_rate, num_channels, format);
         if(err != Cin_eLoaderSuccess)
             return err;
     }
+#endif
     
     alcMakeContextCurrent(drv->ctx);
     
@@ -346,6 +349,7 @@ unsigned Cin_StructSoundSize(){
 
 enum Cin_SoundError Cin_SoundPlay(struct Cin_Sound *snd){
     alcMakeContextCurrent(snd->ctx);
+    alSourcei(snd->snd, AL_LOOPING, AL_FALSE);
     alSourcePlay(snd->snd);
     return Cin_eSoundSuccess;
 }
