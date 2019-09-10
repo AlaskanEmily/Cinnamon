@@ -356,6 +356,15 @@ enum Cin_SoundError Cin_SoundPlay(struct Cin_Sound *snd){
 
 /*****************************************************************************/
 
+enum Cin_SoundError Cin_SoundPlayLoop(struct Cin_Sound *snd, int loop){
+    alcMakeContextCurrent(snd->ctx);
+    alSourcei(snd->snd, AL_LOOPING, (loop==0) ? AL_FALSE : AL_TRUE);
+    alSourcePlay(snd->snd);
+    return Cin_eSoundSuccess;
+}
+
+/*****************************************************************************/
+
 enum Cin_SoundError Cin_SoundStop(struct Cin_Sound *snd){
     alcMakeContextCurrent(snd->ctx);
     alSourceStop(snd->snd);

@@ -102,7 +102,28 @@ enum Cin_SoundError {
  */
 CIN_EXPORT(unsigned) Cin_StructSoundSize();
 
+/**
+ * @brief Causes a sound to play.
+ *
+ * This will trigger the sound to play without looping.
+ *
+ * Calling play on a sound that is already playing will do nothing. To restart
+ * a sound, use Cin_SoundStop first.
+ */
 CIN_EXPORT(enum Cin_SoundError) Cin_SoundPlay(struct Cin_Sound *snd);
+
+/**
+ * @brief Causes a sound to play with optional looping.
+ *
+ * The sound will loop if the loop param is non-zero.
+ *
+ * Calling play on a sound that is already playing will do nothing. To restart
+ * a sound, use Cin_SoundStop first.
+ *
+ * @sa Cin_SoundPlay
+ */
+CIN_EXPORT(enum Cin_SoundError) Cin_SoundPlayLoop(struct Cin_Sound *snd,
+    int loop);
 
 CIN_EXPORT(enum Cin_SoundError) Cin_SoundStop(struct Cin_Sound *snd);
 

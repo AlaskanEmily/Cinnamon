@@ -65,6 +65,13 @@ CIN_EXPORT(enum Cin_SoundError) Cin_SoundPlay(Cin_Sound *snd){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+CIN_EXPORT(enum Cin_SoundError) Cin_SoundPlayLoop(Cin_Sound *snd, int loop){
+    snd->play(!!loop);
+    return Cin_eSoundSuccess;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 CIN_EXPORT(enum Cin_SoundError) Cin_SoundStop(Cin_Sound *snd){
     snd->stop();
     return Cin_eSoundSuccess;

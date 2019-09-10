@@ -7,6 +7,8 @@
 #include "cinnamon.h"
 #include "cin_soft_loader.h"
 
+#include <assert.h>
+
 #include <mmreg.h>
 #include <ks.h>
 #include <ksmedia.h>
@@ -105,6 +107,7 @@ Cin_Sound::Cin_Sound(IDirectSound8 *dsound, const Cin_Loader &ld)
     fmt.Format.wBitsPerSample = bytes_per_sample << 3;
 
     // Check the size of the loader data.
+
     const unsigned byte_size = ld.bytes_placed;
 #ifndef NDEBUG
     {
@@ -115,7 +118,8 @@ Cin_Sound::Cin_Sound(IDirectSound8 *dsound, const Cin_Loader &ld)
         assert(debug_byte_size == byte_size);
     }
 #endif
-
+    
+    
     DSBUFFERDESC descriptor;
     descriptor.dwSize = sizeof(DSBUFFERDESC);
     descriptor.dwFlags = DSBCAPS_GLOBALFOCUS;
@@ -135,7 +139,11 @@ Cin_Sound::Cin_Sound(IDirectSound8 *dsound, const Cin_Loader &ld)
         buffer_size == byte_size){
         
         Cin_LoaderMemcpy(ld.first, 0, buffer_data, byte_size);
-        m_buffer->Unlock(buffer_data, byte_size, NULL, 0);
+        if(m_buffer->Unlock(buffer_data, byte_size, NULL, 0) != DS_OK){
+            m_dsound->Release();
+            m_buffer->Release();
+            m_buffer = NULL;
+        }
     }
     else{
         m_dsound->Release();
