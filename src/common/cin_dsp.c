@@ -25,19 +25,38 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <limits.h>
 
 /*****************************************************************************/
 
-static const double one_by_in8 = 0.007874015748031496,
-    one_by_in16 = 3.051850948e-05,
-    one_by_in32 = 4.656612875e-10;
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
 
 /*****************************************************************************/
 
-static const float one_by_in8f = 0.007874015748f,
-    one_by_in16f = 3.051851e-05f,
-    one_by_in32f = 4.656613e-10f;
+static const double
+    cin_dsp_reciprocal_S8Float64 = 0.007874015748031496,
+    cin_dsp_reciprocal_S16Float64 = 3.051850948e-05,
+    cin_dsp_reciprocal_S32Float64 = 4.656612875e-10,
+    cin_dsp_coefficient_S8Float64 = 127.0,
+    cin_dsp_coefficient_S16Float64 = 32767.0,
+    cin_dsp_coefficient_S32Float64 = 2147483647.0;
+
+/*****************************************************************************/
+
+static const float
+    cin_dsp_reciprocal_S8Float32 = 0.007874015748f,
+    cin_dsp_reciprocal_S16Float32 = 3.051851e-05f,
+    cin_dsp_reciprocal_S32Float32 = 4.656613e-10f,
+    cin_dsp_coefficient_S8Float32 = 127.0f,
+    cin_dsp_coefficient_S16Float32 = 32767.0f,
+    cin_dsp_coefficient_S32Float32 = 2147483647.0f;
 
 /*****************************************************************************/
 
@@ -68,7 +87,7 @@ static const float one_by_in8f = 0.007874015748f,
 /*****************************************************************************/
 
 #define CIN_DSP_MIX(TYPE) \
-void Cin_DSP_Mix ## TYPE(unsigned num_bytes, \
+static void Cin_DSP_Mix ## TYPE(unsigned num_bytes, \
     unsigned num_streams, \
     const TYPE **in, \
     TYPE *out){ \
@@ -212,9 +231,6 @@ unsigned Cin_DSP_ConversionSize(unsigned num_bytes,
     const struct Cin_DSP_MixerFormat *in_format,
     const struct Cin_DSP_MixerFormat *out_format){
     
-    assert(in_format->sample_format < CIN_DSP_FORMAT_NUM_FORMATS);
-    assert(out_format->sample_format < CIN_DSP_FORMAT_NUM_FORMATS);
-    
     const unsigned in_bytes_per_sample =
         cin_dsp_bytes_per_sample[in_format->sample_format];
     const unsigned out_bytes_per_sample =
@@ -228,6 +244,9 @@ unsigned Cin_DSP_ConversionSize(unsigned num_bytes,
     
     unsigned in_rate = in_format->sample_rate;
     unsigned out_rate = out_format->sample_rate;
+    
+    assert(in_format->sample_format < CIN_DSP_FORMAT_NUM_FORMATS);
+    assert(out_format->sample_format < CIN_DSP_FORMAT_NUM_FORMATS);
     
     assert(num_bytes % in_bytes_per_sample == 0);
     assert(num_samples % in_format->num_channels == 0);
@@ -248,12 +267,204 @@ unsigned Cin_DSP_ConversionSize(unsigned num_bytes,
 
 /*****************************************************************************/
 
-#define CIN_DSP_CONVERT_SAMPLE(INTYPE, OUTTYPE, IN) \
-    (( sizeof(INTYPE) == sizeof(OUTTYPE) ) ? \
-        (IN) : \
-    ( sizeof(INTYPE) < sizeof(OUTTYPE) ) ? \
-        (IN << (sizeof(OUTTYPE) - sizeof(INTYPE))) : \
-        (IN >> (sizeof(INTYPE) - sizeof(OUTTYPE))))\
+#define CIN_DSP_CONVERT_SAMPLE_INT_TO_INT(IN_TYPE, OUT_TYPE, IN) \
+    (( sizeof(IN_TYPE) == sizeof(OUT_TYPE) ) ? \
+        ((OUT_TYPE)(IN)) : \
+    ( sizeof(IN_TYPE) < sizeof(OUT_TYPE) ) ? \
+        (((OUT_TYPE)(IN)) << (sizeof(OUT_TYPE) - sizeof(IN_TYPE))) : \
+        (OUT_TYPE)(IN >> (sizeof(IN_TYPE) - sizeof(OUT_TYPE))))
+
+#define CIN_DSP_CONVERT_SAMPLE_INT_TO_FLOAT(IN_TYPE, OUT_TYPE, IN) \
+    (((OUT_TYPE)(IN))*cin_dsp_reciprocal_ ## IN_TYPE ## OUT_TYPE)
+
+#define CIN_DSP_CONVERT_SAMPLE_FLOAT_TO_INT(IN_TYPE, OUT_TYPE, IN) \
+    (((OUT_TYPE)(IN))*cin_dsp_coefficient_ ## OUT_TYPE ## IN_TYPE)
+
+/* Generate the converters */
+#define CIN_DSP_GEN_NAME(A, B) Cin_DSP_Convert ## A ## B
+
+/*****************************************************************************/
+/* Signed 8-bit converters */
+#define IN_TYPE S8
+#define OUT_TYPE S8
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S8, S8)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S8
+#define OUT_TYPE S16
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S8, S16)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S8
+#define COMMON_TYPE S16
+#define OUT_TYPE S32
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S8, S32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S8
+#define COMMON_TYPE S16
+#define OUT_TYPE Float32
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_INT_TO_FLOAT(S16, Float32, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S8, Float32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S8
+#define COMMON_TYPE S16
+#define OUT_TYPE Float64
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_INT_TO_FLOAT(S16, Float64, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S8, Float64)
+#include "cin_convert_core.inc"
+
+/*****************************************************************************/
+/* Signed 16-bit converters */
+#define IN_TYPE S16
+#define COMMON_TYPE S16
+#define OUT_TYPE S8
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S16, S8)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S16
+#define OUT_TYPE S16
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S16, S16)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S16
+#define OUT_TYPE S32
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S16, S32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S16
+#define COMMON_TYPE S16
+#define OUT_TYPE Float32
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_INT_TO_FLOAT(S16, Float32, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S16, Float32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S16
+#define COMMON_TYPE S16
+#define OUT_TYPE Float64
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_INT_TO_FLOAT(S16, Float64, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S16, Float64)
+#include "cin_convert_core.inc"
+
+/*****************************************************************************/
+/* Signed 32-bit converters */
+#define IN_TYPE S32
+#define COMMON_TYPE S32
+#define OUT_TYPE S8
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S32, S8)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S32
+#define COMMON_TYPE S32
+#define OUT_TYPE S16
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S32, S16)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S32
+#define OUT_TYPE S32
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S32, S32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S32
+#define COMMON_TYPE S32
+#define OUT_TYPE Float32
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_INT_TO_FLOAT(S32, Float32, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S32, Float32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE S32
+#define COMMON_TYPE S32
+#define OUT_TYPE Float64
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_INT_TO_FLOAT(S32, Float64, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(S32, Float64)
+#include "cin_convert_core.inc"
+
+/*****************************************************************************/
+/* float converters */
+#define IN_TYPE Float32
+#define COMMON_TYPE Float32
+#define OUT_TYPE S8
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) (X)
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_FLOAT_TO_INT(Float32, S8, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float32, S8)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float32
+#define COMMON_TYPE S16
+#define OUT_TYPE S16
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) \
+    CIN_DSP_CONVERT_SAMPLE_FLOAT_TO_INT(Float32, S16, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float32, S16)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float32
+#define COMMON_TYPE Float32
+#define OUT_TYPE S32
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) (X)
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_FLOAT_TO_INT(Float32, S32, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float32, S32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float32
+#define OUT_TYPE Float32
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) (X)
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float32, Float32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float32
+#define OUT_TYPE Float64
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) ((Float64)(X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float32, Float64)
+#include "cin_convert_core.inc"
+
+/*****************************************************************************/
+/* double converters */
+#define IN_TYPE Float64
+#define COMMON_TYPE Float64
+#define OUT_TYPE S8
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) (X)
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) \
+    CIN_DSP_CONVERT_SAMPLE_FLOAT_TO_INT(Float64, S8, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float64, S8)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float64
+#define COMMON_TYPE S16
+#define OUT_TYPE S16
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) \
+    CIN_DSP_CONVERT_SAMPLE_FLOAT_TO_INT(Float64, S16, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float64, S16)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float64
+#define COMMON_TYPE S32
+#define OUT_TYPE S32
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) \
+    CIN_DSP_CONVERT_SAMPLE_FLOAT_TO_INT(Float64, S32, (X))
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float64, S32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float64
+#define OUT_TYPE Float32
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) (X)
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float64, Float32)
+#include "cin_convert_core.inc"
+
+#define IN_TYPE Float64
+#define OUT_TYPE Float64
+#define CIN_DSP_CONVERT_SAMPLE_IN_TO_COMMON(X) (X)
+#define CIN_DSP_CONVERT_SAMPLE_COMMON_TO_OUT(X) (X)
+#define CIN_DSP_CONVERT_NAME CIN_DSP_GEN_NAME(Float64, Float64)
+#include "cin_convert_core.inc"
 
 /*****************************************************************************/
 
@@ -262,20 +473,57 @@ unsigned Cin_DSP_Convert(unsigned num_bytes,
     const void *in_data,
     const struct Cin_DSP_MixerFormat *out_format,
     void *out_data){
-    
-    const ldiv_t rate = ldiv(out_format->sample_rate, in_format->sample_rate);
-    
-    /* HUGE HUGE HACK! */
-    const unsigned n = Cin_DSP_ConversionSize(num_bytes, in_format, out_format);
-    
-    if(n < num_bytes){
-        memcpy(out_data, in_data, n);
+
+#define CIN_DSP_CONVERT_CALL(IN_TYPE, OUT_TYPE) \
+    (num_bytes / sizeof(IN_TYPE))/in_format->num_channels, \
+    (const IN_TYPE *)in_data, \
+    (OUT_TYPE *)out_data, \
+    in_format->sample_rate, \
+    in_format->num_channels, \
+    out_format->sample_rate, \
+    out_format->num_channels
+ 
+#define CIN_DSP_CONVERT_1(IN_TYPE) \
+    switch(out_format->sample_format){ \
+        case CIN_DSP_FORMAT_S8: \
+            Cin_DSP_Convert ## IN_TYPE ## S8( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, S8) ); break; \
+        case CIN_DSP_FORMAT_S16: \
+            Cin_DSP_Convert ## IN_TYPE ## S16( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, S16) ); break; \
+        case CIN_DSP_FORMAT_S32: \
+            Cin_DSP_Convert ## IN_TYPE ## S32( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, S32) ); break; \
+        case CIN_DSP_FORMAT_FLOAT32: \
+            Cin_DSP_Convert ## IN_TYPE ## Float32( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, Float32) ); break; \
+        case CIN_DSP_FORMAT_FLOAT64: \
+            Cin_DSP_Convert ## IN_TYPE ## Float64( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, Float64) ); break; \
+        default: \
+            return 0; \
     }
-    else{
-        memcpy(out_data, in_data, num_bytes);
-        memset(((unsigned char)out_data) + num_bytes, 0, n - num_bytes);
+    
+    switch(in_format->sample_format){
+        case CIN_DSP_FORMAT_S8:
+            CIN_DSP_CONVERT_1(S8); break;
+            
+        case CIN_DSP_FORMAT_S16:
+            CIN_DSP_CONVERT_1(S16); break;
+            
+        case CIN_DSP_FORMAT_S32:
+            CIN_DSP_CONVERT_1(S32); break;
+            
+        case CIN_DSP_FORMAT_FLOAT32:
+            CIN_DSP_CONVERT_1(Float32); break;
+            
+        case CIN_DSP_FORMAT_FLOAT64:
+            CIN_DSP_CONVERT_1(Float64); break;
+        
+        default:
+            return 0;
     }
-    return n;
+    return num_bytes;
 }
 
 /*****************************************************************************/
@@ -286,6 +534,11 @@ unsigned Cin_DSP_Mix(unsigned num_bytes,
     const void **in_data,
     void *out_data){
     
+#ifdef __GNUC__
+/* For some bizarre reason, GCC says that void ** can't be case to float **? */
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+#endif
+   
     switch(format->sample_format){
         case CIN_DSP_FORMAT_S8:
             Cin_DSP_MixS8(num_bytes, num_streams, in_data, out_data); break;
@@ -307,3 +560,7 @@ unsigned Cin_DSP_Mix(unsigned num_bytes,
     }
     return num_bytes;
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
