@@ -10,6 +10,7 @@
 #include "cinnamon.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 
 /*
@@ -30,7 +31,7 @@
 #include <Windows.h>
 #define AUCAT_SLEEP Sleep
 
-#elif defined __linux__
+#else
 /* usleep is missing/deprecated on Linux, use nanosleep instead. */
 
 #include <time.h>
@@ -38,22 +39,11 @@
 
 #define AUCAT_SLEEP(MS) do{\
     const unsigned long AUCAT_SLEEP_ms = (MS);\
-    struct AUCAT_SLEEP_ts;\
-    AUCAT_SLEEP_ts.tn_sec = (AUCAT_SLEEP_ms % 1000) * 1000000;\
+    struct timespec AUCAT_SLEEP_ts;\
+    AUCAT_SLEEP_ts.tv_nsec = (AUCAT_SLEEP_ms % 1000) * 1000000;\
     AUCAT_SLEEP_ts.tv_sec = AUCAT_SLEEP_ms / 1000;\
     nanosleep(&AUCAT_SLEEP_ts, NULL);\
 } while(0)
-
-#else
-/* On BSD and OS X (and likely other platforms like Solaris and AIX) we can
- * simply use nanosleep. This requires _BSD_SOURCE on some platforms.
- */
-
-#define _BSD_SOURCE
-#include <time.h>
-#include <unistd.h>
-
-#define AUCAT_SLEEP(MS) do{ nanosleep((MS) * 1000); }while(0)
 
 #endif
 
@@ -141,7 +131,7 @@ int main(int argc, char **argv){
 			return EXIT_FAILURE;
 		}
 		
-		while(num_read = fread(buffer, 1, rate, input)){
+		while((num_read = fread(buffer, 1, rate, input)) != 0){
 			Cin_LoaderPut(loader, buffer, num_read);
             total_read += num_read;
 		}
@@ -173,4 +163,6 @@ int main(int argc, char **argv){
         
         free(sound);
 	}
+    
+    return EXIT_SUCCESS;
 }
