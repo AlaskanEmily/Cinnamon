@@ -416,7 +416,7 @@ CIN_DSP_CALL(unsigned) Cin_DSP_ConversionSize(unsigned num_bytes,
  * @param in_data Input data to convert
  * @param out_format Format to convert to
  * @param out_data Destination buffer.
- * @return Number of bytes converted.
+ * @return Number of bytes converted, or 0 on error.
  *
  * @sa Cin_DSP_ConversionSize
  */
@@ -429,6 +429,9 @@ CIN_DSP_CALL(unsigned) Cin_DSP_Convert(unsigned in_bytes,
 
 /**
  * @brief Mixes multiple audio buffers of the same format and size.
+ *
+ * Mixing can re-use an input buffer, although if out_data appears in the
+ * in_data array it MUST be the first element and must only appear once.
  *
  * @param num_bytes Number of bytes of data to consume
  * @param format Format of data to consume

@@ -73,6 +73,7 @@ CIN_PRIVATE(void) Cin_ResampleSound(const struct Cin_Loader *from,
  * You must include cin_soft_loader.h and cin_dsp.h to use this.
  * This is only a macro to allow us to avoid adding an additional library just
  * to glue together SoftLoader and MixerSound.
+ * TODO: This just swallows errors!
  */
 #define CIN_MIXER_SOUND_FROM_SOFT_LOADER(LD, FMT, OUT, ALLOCATOR) do{ \
         const struct Cin_Loader *const CIN_MIXER_loader = (LD);\
@@ -95,6 +96,7 @@ CIN_PRIVATE(void) Cin_ResampleSound(const struct Cin_Loader *from,
             struct Cin_MixerSound *const CIN_MIXER_out = \
                 ALLOCATOR(sizeof(struct Cin_MixerSound) + CIN_MIXER_out_size); \
             (OUT) = CIN_MIXER_out; \
+            CIN_MIXER_out->byte_len = CIN_MIXER_out_size; \
             for(CIN_MIXER_loader_data = CIN_MIXER_loader->first; \
                 CIN_MIXER_loader_data != NULL; \
                 CIN_MIXER_loader_data = CIN_MIXER_loader_data->next){ \
@@ -105,6 +107,7 @@ CIN_PRIVATE(void) Cin_ResampleSound(const struct Cin_Loader *from,
                     CIN_SOFT_LOADER_DATA(CIN_MIXER_loader_data), \
                     CIN_MIXER_out_format, \
                     CIN_MIXER_SOUND_PCM(CIN_MIXER_out) + CIN_MIXER_i); \
+                if(CIN_MIXER_added == 0) break; \
                 CIN_MIXER_i += CIN_MIXER_added; \
             } \
         } \

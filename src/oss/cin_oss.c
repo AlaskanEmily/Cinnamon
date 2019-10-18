@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
@@ -39,6 +40,8 @@ void *Cin_OSS_ThreadFunc(void *v){
     const int format = Cin_OSS_GetFormat(drv);
     const int bytes_per_frame = CIN_FORMAT_BYTES_PER_SAMPLE(format) * num_channels;
     const int buffer_size = (bytes_per_frame * rate) / 10;
+    
+    const void *input_data[CIN_OSS_SOUND_CHANNELS+1];
     
     void *const buffer = malloc(buffer_size);
     
@@ -73,11 +76,75 @@ iter:
     }
     
     if(active_channels != 0){
-        Cin_DSP_Mix(buffer_size, dsp_fmt, active_channels, channels, buffer);
+        /* First, mix any finalizing channels (channels without enough data to
+         * fill the buffer)
+         */
         i = 0;
+        
+        /* Find the first channel which is being finalized, if any. */
         do{
-            channels[i]->position += buffer_size;
+            if(channels[i]->position + buffer_size >
+                channels[i]->byte_len){
+                break;
+            }
         }while(++i < active_channels);
+        
+        /* Check this only if we broke early (found a finalizing channel) */
+        if(i != active_channels){
+            input_data[0] = buffer;
+            
+            /* Very fortunately, zero-init is ALSO zero in float and double */
+            memset(buffer, 0, buffer_size);
+            
+            do{
+                struct Cin_MixerSound *const snd = channels[i];
+                const int remaining_length =
+                    snd->byte_len - snd->position;
+                if(remaining_length < buffer_size){
+                    input_data[1] = CIN_MIXER_SOUND_PCM(channels[i]) +
+                        snd->position;
+                    
+                    Cin_DSP_Mix(remaining_length,
+                        dsp_fmt,
+                        2,
+                        input_data,
+                        buffer);
+                    
+                    /* Pull out this channel by simply swapping in the final
+                     * element. This makes removing any element constant time,
+                     * and is acceptable because the order of the channels is
+                     * not important.
+                     */
+                    channels[i] = channels[--active_channels];
+                }
+                else{
+                    i++;
+                }
+            }while(i < active_channels);
+            
+            /* Set i = 1, so that we do not place anything over the input_data
+             * element containing our mixed finalizing sounds.
+             */
+            i = 1;
+        }
+        else{
+            /* No finalizing sounds, so no extra inputs. */
+            i = 0;
+        }
+        
+        /* No need to remix if all channels were finalizing. */
+        if(active_channels != 0){
+            register unsigned source_i = 0;
+            do{
+                input_data[i++] = CIN_MIXER_SOUND_PCM(channels[source_i]) +
+                    channels[source_i]->position;
+                channels[source_i]->position += buffer_size;
+            }while(++source_i < active_channels);
+        }
+        /* i contains the final element placed into input_data, regardless
+         * of how many were from the input channels.
+         */
+        Cin_DSP_Mix(buffer_size, dsp_fmt, i, input_data, buffer);
     }
     else{
         memset(buffer, 0, buffer_size);

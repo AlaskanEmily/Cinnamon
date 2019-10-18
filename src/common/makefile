@@ -22,5 +22,5 @@ libcin_mixer.a: $(MIXER_OBJECTS)
 cin_mixer_sound.o: cin_mixer_sound.c cin_mixer_sound.h cin_dsp.h $(ROOTDIR)/cin_export.h $(ROOTDIR)/cin_format.h
 	$(CC) $(CFLAGS) -I"$(ROOTDIR)" -c cin_mixer_sound.c -o cin_mixer_sound.o
 
-cin_dsp.o: cin_dsp.c cin_dsp.h
+cin_dsp.o: cin_dsp.c cin_dsp.h cin_convert_core.inc
 	$(CC) $(CFLAGS) -c cin_dsp.c -o cin_dsp.o

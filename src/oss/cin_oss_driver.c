@@ -7,6 +7,7 @@
 
 #include "cin_oss_driver.h"
 #include "cin_oss_sound.h"
+#include "cin_mixer_sound.h"
 #include "cin_oss.h"
 #include "cinnamon.h"
 
@@ -119,7 +120,7 @@ CIN_PRIVATE(int) Cin_OSS_NewID(struct Cin_Driver *drv){
 CIN_PRIVATE(int) Cin_OSS_PushCommand(struct Cin_Driver *drv,
     struct Cin_OSS_Command *cmd){
     TAILQ_INSERT_TAIL(&drv->commands, cmd, entries);
-    return 1;
+    return 0;
 }
 
 /*****************************************************************************/
@@ -203,21 +204,30 @@ CIN_PRIVATE(int) Cin_OSS_ProcessCommands(struct Cin_Driver *drv){
             
             switch(command){
                 case CIN_OSS_INSERT:
-                    puts("CIN_OSS_INSERT");
+                    /* puts("CIN_OSS_INSERT"); */
                     SLIST_INSERT_HEAD(&drv->sounds, sound, entries);
                     break;
                 case CIN_OSS_DELETE:
-                    puts("CIN_OSS_DELETE");
+                    /* puts("CIN_OSS_DELETE"); */
                     if(prev == NULL)
                         SLIST_REMOVE_HEAD(&drv->sounds, entries);
                     else
+                    /* When compiling on Linux with OSS emulation, we need to
+                     * deal with not having this macro. */
+#ifndef SLIST_REMOVE_AFTER
+                        SLIST_REMOVE(&drv->sounds,
+                            SLIST_NEXT(prev, entries),
+                            Cin_OSS_Sound,
+                            entries);
+#else
                         SLIST_REMOVE_AFTER(prev, entries);
+#endif
                     /* We want to stop any playing instances of this sound. */
                     
                     /* FALLTHROUGH */
                 case CIN_OSS_STOP:
-                    if(command == CIN_OSS_STOP)
-                        puts("CIN_OSS_STOP");
+                    /* if(command == CIN_OSS_STOP)
+                        puts("CIN_OSS_STOP"); */
                     for(i = 0; i < CIN_OSS_SOUND_CHANNELS; i++){
                         if(drv->channels[i] == sound->snd){
                             drv->channels[i] = NULL;
@@ -225,10 +235,25 @@ CIN_PRIVATE(int) Cin_OSS_ProcessCommands(struct Cin_Driver *drv){
                     }
                     break;
                 case CIN_OSS_PLAY:
-                    puts("CIN_OSS_PLAY");
+                    /* puts("CIN_OSS_PLAY"); */
+                    
+                    /* Check if the sound is already playing, and do nothing
+                     * if it is.
+                     */
+                    for(i = 0; i < CIN_OSS_SOUND_CHANNELS; i++){
+                        if(drv->channels[i] == sound->snd){
+                            sound = NULL;
+                            /* Found. */
+                            break;
+                        }
+                    }
+                    if(sound == NULL)
+                        break;
+                    
                     for(i = 0; i < CIN_OSS_SOUND_CHANNELS; i++){
                         if(drv->channels[i] == NULL){
                             drv->channels[i] = sound->snd;
+                            drv->channels[i]->position = 0;
                             break;
                         }
                     }
@@ -239,7 +264,7 @@ CIN_PRIVATE(int) Cin_OSS_ProcessCommands(struct Cin_Driver *drv){
                      */
                     break;
                 case CIN_OSS_QUIT:
-                    puts("CIN_OSS_QUIT");
+                    /* puts("CIN_OSS_QUIT"); */
                     /* Keep going so that we at least drain the queue. */
                     val = 1;
                     break;
@@ -366,12 +391,12 @@ enum Cin_DriverError Cin_CreateDriver(struct Cin_Driver *drv){
         
         drv->rate = val;
         
-        /* Set the buffer size. */
+        /* Set the buffer size. 
         val = 0x0004000B;
         if(ioctl(dev, SNDCTL_DSP_SETFRAGMENT, &val) == -1){
             ret = Cin_eDriverFailure;
             goto fail_device;
-        }
+        } */
     }
     
     {
@@ -401,7 +426,7 @@ void Cin_DestroyDriver(struct Cin_Driver *drv){
     Cin_OSS_PushCommand(drv, quit);
     {
         void *unused;
-        pthread_join(&drv->thread, &unused);
+        pthread_join(drv->thread, &unused);
     }
     /* Finalize the driver. */
     close(drv->dev);

@@ -26,16 +26,22 @@ static enum Cin_SoundError cin_sound_command(struct Cin_Sound *snd, int type){
     struct Cin_OSS_Command *cmd = Cin_OSS_NewCommand(snd->sound_id, type);
     
     if(Cin_OSS_Lock(snd->drv) != 0){
+        assert(!"Could not lock");
         return Cin_eSoundFailure;
     }
     
-    if(Cin_OSS_PushCommand(snd->drv, cmd) != 0)
+    if(Cin_OSS_PushCommand(snd->drv, cmd) != 0){
+        assert(!"Could not push command");
         ret = Cin_eSoundFailure;
-
-    if(Cin_OSS_Unlock(snd->drv) != 0)
+    }
+    
+    if(Cin_OSS_Unlock(snd->drv) != 0){
+        assert(!"Could not unlock");
         return Cin_eSoundFailure;
-    else
+    }
+    else{
         return ret;
+    }
 }
 
 /*****************************************************************************/

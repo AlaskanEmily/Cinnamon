@@ -97,7 +97,10 @@ static void Cin_DSP_Mix ## TYPE(unsigned num_bytes, \
     \
     switch(num_streams){ \
         case 0: return; \
-        case 1: memmove(out, *in, num_bytes); return; \
+        case 1: \
+            if(*in != out) \
+                memmove(out, *in, num_bytes); \
+            return; \
         default: \
         case 4: data[3] = in[3]; \
         case 3: data[2] = in[2]; \
@@ -475,7 +478,7 @@ unsigned Cin_DSP_Convert(unsigned num_bytes,
     void *out_data){
 
 #define CIN_DSP_CONVERT_CALL(IN_TYPE, OUT_TYPE) \
-    (num_bytes / sizeof(IN_TYPE))/in_format->num_channels, \
+    (num_bytes / (sizeof(IN_TYPE) * in_format->num_channels)), \
     (const IN_TYPE *)in_data, \
     (OUT_TYPE *)out_data, \
     in_format->sample_rate, \
@@ -486,39 +489,39 @@ unsigned Cin_DSP_Convert(unsigned num_bytes,
 #define CIN_DSP_CONVERT_1(IN_TYPE) \
     switch(out_format->sample_format){ \
         case CIN_DSP_FORMAT_S8: \
-            Cin_DSP_Convert ## IN_TYPE ## S8( \
-                CIN_DSP_CONVERT_CALL(IN_TYPE, S8) ); break; \
+            return Cin_DSP_Convert ## IN_TYPE ## S8( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, S8) ); \
         case CIN_DSP_FORMAT_S16: \
-            Cin_DSP_Convert ## IN_TYPE ## S16( \
-                CIN_DSP_CONVERT_CALL(IN_TYPE, S16) ); break; \
+            return Cin_DSP_Convert ## IN_TYPE ## S16( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, S16) ); \
         case CIN_DSP_FORMAT_S32: \
-            Cin_DSP_Convert ## IN_TYPE ## S32( \
-                CIN_DSP_CONVERT_CALL(IN_TYPE, S32) ); break; \
+            return Cin_DSP_Convert ## IN_TYPE ## S32( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, S32) ); \
         case CIN_DSP_FORMAT_FLOAT32: \
-            Cin_DSP_Convert ## IN_TYPE ## Float32( \
-                CIN_DSP_CONVERT_CALL(IN_TYPE, Float32) ); break; \
+            return Cin_DSP_Convert ## IN_TYPE ## Float32( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, Float32) ); \
         case CIN_DSP_FORMAT_FLOAT64: \
-            Cin_DSP_Convert ## IN_TYPE ## Float64( \
-                CIN_DSP_CONVERT_CALL(IN_TYPE, Float64) ); break; \
+            return Cin_DSP_Convert ## IN_TYPE ## Float64( \
+                CIN_DSP_CONVERT_CALL(IN_TYPE, Float64) ); \
         default: \
             return 0; \
     }
     
     switch(in_format->sample_format){
         case CIN_DSP_FORMAT_S8:
-            CIN_DSP_CONVERT_1(S8); break;
+            CIN_DSP_CONVERT_1(S8);
             
         case CIN_DSP_FORMAT_S16:
-            CIN_DSP_CONVERT_1(S16); break;
+            CIN_DSP_CONVERT_1(S16);
             
         case CIN_DSP_FORMAT_S32:
-            CIN_DSP_CONVERT_1(S32); break;
+            CIN_DSP_CONVERT_1(S32);
             
         case CIN_DSP_FORMAT_FLOAT32:
-            CIN_DSP_CONVERT_1(Float32); break;
+            CIN_DSP_CONVERT_1(Float32);
             
         case CIN_DSP_FORMAT_FLOAT64:
-            CIN_DSP_CONVERT_1(Float64); break;
+            CIN_DSP_CONVERT_1(Float64);
         
         default:
             return 0;
