@@ -45,10 +45,9 @@
 #elif defined __GNUC__ /* GCC or not WIN32 */
 
 #ifdef __CYGWIN__
-  /* Use the C calling convention for all exported symbols, with protected visibility. */
-  #define CIN_EXPORT(X) X __attribute__((visibility ("default"), cdecl, used))
-  /* Internal functions have hidden visibility. */
-  #define CIN_PRIVATE(X) X __attribute__((visibility("hidden"), fastcall))
+  /* Use the C calling convention for all exported symbols. */
+  #define CIN_EXPORT(X) X __attribute__((cdecl, used))
+  #define CIN_PRIVATE(X) X
 #else
   #define CIN_EXPORT(X) X __attribute__((visibility ("default")))
   #define CIN_PRIVATE(X) X __attribute__((visibility("hidden")))

@@ -25,6 +25,10 @@
 #define M_PI 3.14159265f
 #endif
 
+#if (defined __CYGWIN__) || (defined __WATCOMC__)
+#define sinf sin
+#endif
+
 int main(int argc, char **argv){
     struct Cin_Driver *const driver = malloc(Cin_StructDriverSize());
     if(driver == NULL){
