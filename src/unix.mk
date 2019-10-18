@@ -27,10 +27,10 @@ aucat.o: aucat.c cinnamon.h cin_export.h cin_format.h
 	$(CC) $(CFLAGS) -c aucat.c -o aucat.o
 
 sine_test: libcinnamon.a sine_test.o
-	$(LINK) sine_test.o libcinnamon.a -o sine_test
+	$(LINK) sine_test.o libcinnamon.a $(EXTRALIBS) -lm -o sine_test
 
 aucat: libcinnamon.a aucat.o
-	$(LINK) aucat.o libcinnamon.a -o aucat
+	$(LINK) aucat.o libcinnamon.a $(EXTRALIBS) -o aucat
 
 clean:
 	rm *.o 2> /dev/null || true

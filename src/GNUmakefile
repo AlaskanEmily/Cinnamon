@@ -7,11 +7,15 @@ include gcc.mk
 
 BACKEND?=openal
 
-# Only OpenAL can be compiled without C++ currently.
-ifeq "$(BACKEND)" "openal"
-LINK?=$(CC)
+ifeq "$(BACKEND)" "dsound"
+LINK?=$(CXX)
+else ifeq "$(BACKEND)" "oss"
+EXTRALIBS=-lpthread
+LINK?="$(CC)"
+else ifeq "$(BACKEND)" "openal"
+EXTRALIBS=-lopenal
+LINK?="$(CC)"
 else
-LINK=$(CXX)
 endif
-
+LINK?="$(CC)"
 include unix.mk

@@ -7,11 +7,10 @@
 
 BACKEND?=oss
 
-# Only OpenAL can be compiled without C++ currently.
-.if "${BACKEND}" == "openal"
-LINK?=$(CC)
+.if "${BACKEND}" == "dsound"
+LINK?=$(CXX)
 .else
-LINK=$(CXX)
+LINK=$(CC)
 .endif
 
 .include "unix.mk"

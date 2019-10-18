@@ -5,6 +5,8 @@
 #ifdef _MSC_VER
 /* Fart off, Visual C++ */
 #define _CRT_SECURE_NO_WARNINGS
+#else
+#define _POSIX_C_SOURCE 199309L
 #endif
 
 #include "cinnamon.h"
