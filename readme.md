@@ -1,6 +1,18 @@
 Cinnamon Audio Library
 ======================
 
+NOTICE: THIS PROJECT HAS MOVED
+==============================
+
+Cinnamon is now developed at: https://osdn.net/projects/cinnamon-audio/
+-----------------------------------------------------------------------
+
+I am leaving this repo here, in its last state before I changed hosting.
+All further work will occur elsewhere. I do not support github.
+
+Summary
+-------
+
 Cinnamon is a cross-platform, lightweight audio library for fully buffered audio. It currently
 wraps OpenAL and DirectSound, providing a simple interface to play audio with a minimum of external
 dependencies. Further backends are possible (there is a partial OSS backend).
